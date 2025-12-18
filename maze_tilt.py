@@ -1,7 +1,7 @@
 import sys
 import math
 import time
-
+import serial
 import pygame
 from pygame.locals import *
 
@@ -284,6 +284,132 @@ def draw_overlay_text(screen, font, lines, x=15, y=15):
         yy += surf.get_height() + 4
 
 
+class AccelController:
+    """
+    Legge x,y,z da seriale e li converte in tilt_x_deg / tilt_z_deg.
+    - Calibra offset iniziale (board ferma) per azzerare.
+    - Usa atan2 per ricavare pitch/roll.
+    - Applica smoothing e deadzone.
+    """
+    def __init__(self, port="COM4", baud=115200, timeout=0.0,
+                 calib_samples=60, smooth=0.20, deadzone_deg=0.6):
+        self.ser = serial.Serial(port, baud, timeout=timeout)
+        time.sleep(2)  # reset USB/seriale
+
+        self.calib_samples = calib_samples
+        self._calib_count = 0
+        self._sumx = 0.0
+        self._sumy = 0.0
+        self._sumz = 0.0
+        self.ox = 0.0
+        self.oy = 0.0
+        self.oz = 0.0
+        self.calibrated = False
+
+        self.smooth = smooth
+        self.deadzone_deg = deadzone_deg
+
+        self.tilt_x_deg = 0.0  # pitch (rotazione asse X nel tuo codice)
+        self.tilt_z_deg = 0.0  # roll  (rotazione asse Z nel tuo codice)
+
+        self._last_xyz = None
+
+    def close(self):
+        try:
+            self.ser.close()
+        except Exception:
+            pass
+
+    def _parse_line(self, line: str):
+        parts = line.strip().split(",")
+        if len(parts) < 2:
+            return None
+        try:
+            x = int(parts[0])
+            y = int(parts[1])
+            z = int(parts[2]) if len(parts) > 2 else 0
+            return (x, y, z)
+        except ValueError:
+            return None
+
+    def read_latest_xyz(self):
+        """
+        Non blocca: legge tutte le righe disponibili e tiene l'ultima valida.
+        """
+        latest = None
+        while True:
+            raw = self.ser.readline()
+            if not raw:
+                break
+            try:
+                s = raw.decode("utf-8", errors="ignore")
+            except Exception:
+                continue
+            v = self._parse_line(s)
+            if v is not None:
+                latest = v
+        if latest is not None:
+            self._last_xyz = latest
+        return self._last_xyz
+
+    def update(self):
+        """
+        Aggiorna tilt_x_deg / tilt_z_deg.
+        Da chiamare una volta per frame.
+        """
+        xyz = self.read_latest_xyz()
+        if xyz is None:
+            return (self.tilt_x_deg, self.tilt_z_deg)
+
+        x, y, z = xyz
+
+        # ---- Calibrazione offset iniziale (tenere il sensore fermo) ----
+        if not self.calibrated:
+            self._sumx += x
+            self._sumy += y
+            self._sumz += z
+            self._calib_count += 1
+            if self._calib_count >= self.calib_samples:
+                self.ox = self._sumx / self._calib_count
+                self.oy = self._sumy / self._calib_count
+                self.oz = self._sumz / self._calib_count
+                self.calibrated = True
+            return (self.tilt_x_deg, self.tilt_z_deg)
+
+        # ---- Rimuovi offset ----
+        ax = x - self.ox
+        ay = y - self.oy
+        az = z - self.oz
+
+        # Evita divisioni strane se az ~ 0
+        # Angoli da accelerazione (approssimazione statica)
+        # roll  ~ inclinazione sx/dx (usa asse X rispetto a Z)
+        roll  = math.degrees(math.atan2(ax, az if abs(az) > 1e-6 else 1e-6))
+        # pitch ~ inclinazione avanti/indietro (usa asse Y rispetto a Z)
+        pitch = math.degrees(math.atan2(ay, az if abs(az) > 1e-6 else 1e-6))
+
+        # ---- Mappa sui tilt del tuo gioco ----
+        # Nel tuo rendering:
+        #   glRotatef(tilt_x_deg, 1,0,0)  (pitch)
+        #   glRotatef(-tilt_z_deg, 0,0,1) (roll)
+        target_tilt_x = pitch
+        target_tilt_z = roll
+
+        # Deadzone per non tremare quando "quasi fermo"
+        if abs(target_tilt_x) < self.deadzone_deg:
+            target_tilt_x = 0.0
+        if abs(target_tilt_z) < self.deadzone_deg:
+            target_tilt_z = 0.0
+
+        # Smoothing (low-pass)
+        a = self.smooth
+        self.tilt_x_deg = (1 - a) * self.tilt_x_deg + a * target_tilt_x
+        self.tilt_z_deg = (1 - a) * self.tilt_z_deg + a * target_tilt_z
+
+        return (self.tilt_x_deg, self.tilt_z_deg)
+
+
+
 # ---------------------------------------------------
 # MAIN
 # ---------------------------------------------------
@@ -292,7 +418,8 @@ def main():
     screen = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT), DOUBLEBUF | OPENGL)
     pygame.display.set_caption("Labirinto 3D – vite, buchi, traguardo")
     clock = pygame.time.Clock()
-    
+
+    accel = AccelController(port="COM4", baud=115200, timeout=0.0)
 
     init_opengl()
 
@@ -322,23 +449,20 @@ def main():
             ball.reset()
             tilt_x_deg = 0.0
             tilt_z_deg = 0.0
+            accel.tilt_x_deg = 0.0
+            accel.tilt_z_deg = 0.0
 
         # Reset soft (SPACE) solo durante gioco
         if keys[K_SPACE] and state == "PLAY":
             ball.reset()
             tilt_x_deg = 0.0
             tilt_z_deg = 0.0
+            accel.tilt_x_deg = 0.0
+            accel.tilt_z_deg = 0.0
 
         if state == "PLAY":
-            # input tilt
-            if keys[K_UP]:
-                tilt_x_deg -= TILT_STEP
-            if keys[K_DOWN]:
-                tilt_x_deg += TILT_STEP
-            if keys[K_LEFT]:
-                tilt_z_deg -= TILT_STEP
-            if keys[K_RIGHT]:
-                tilt_z_deg += TILT_STEP
+            # --- INPUT DA ACCELEROMETRO ---
+            tilt_x_deg, tilt_z_deg = accel.update()
 
             tilt_x_deg = clamp(tilt_x_deg, -MAX_TILT_DEG, MAX_TILT_DEG)
             tilt_z_deg = clamp(tilt_z_deg, -MAX_TILT_DEG, MAX_TILT_DEG)
@@ -362,6 +486,8 @@ def main():
                     ball.reset()
                     tilt_x_deg = 0.0
                     tilt_z_deg = 0.0
+                    accel.tilt_x_deg = 0.0
+                    accel.tilt_z_deg = 0.0
 
             # vittoria
             if point_in_rect(ball.x, ball.z, GOAL_RECT):
@@ -384,12 +510,13 @@ def main():
         draw_sphere(BALL_RADIUS)
         glPopMatrix()
 
-        glPopMatrix()       
+        glPopMatrix()
         pygame.display.flip()
 
+    accel.close()
     pygame.quit()
     sys.exit()
 
-
 if __name__ == "__main__":
     main()
+
