@@ -8,6 +8,12 @@ from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 
+#audio OSC
+from pythonosc.udp_client import SimpleUDPClient
+client = SimpleUDPClient("127.0.0.1", 9000)
+
+
+
 # ---------------------------------------------------
 # CONFIGURAZIONE GENERALE
 # ---------------------------------------------------
@@ -476,22 +482,26 @@ def main():
             for (hx, hz, r) in HOLES:
                 if math.hypot(ball.x - hx, ball.z - hz) < (r - BALL_RADIUS * 0.25):
                     fell = True
+                    client.send_message("/boom", 1)
                     break
 
             if fell:
                 lives -= 1
                 if lives <= 0:
                     state = "GAME_OVER"
+                    client.send_message("/boom", 1)
                 else:
                     ball.reset()
                     tilt_x_deg = 0.0
                     tilt_z_deg = 0.0
                     accel.tilt_x_deg = 0.0
                     accel.tilt_z_deg = 0.0
+                    client.send_message("/boom", 1)
 
             # vittoria
             if point_in_rect(ball.x, ball.z, GOAL_RECT):
                 state = "WIN"
+                client.send_message("/boom", 1)
 
         # -------- RENDER 3D --------
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
