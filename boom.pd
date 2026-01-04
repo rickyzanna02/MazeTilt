@@ -1,4 +1,4 @@
-#N canvas 329 364 882 520 10;
+#N canvas 952 0 958 446 10;
 #X msg 94 305 blastTime \$1;
 #X msg 196 305 scatterTime \$1;
 #X msg 311 305 dispersion \$1;

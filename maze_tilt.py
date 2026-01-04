@@ -10,7 +10,10 @@ from OpenGL.GLU import *
 
 #audio OSC
 from pythonosc.udp_client import SimpleUDPClient
-client = SimpleUDPClient("127.0.0.1", 9000)
+
+
+boom = SimpleUDPClient("127.0.0.1", 9001)
+bouncing = SimpleUDPClient("127.0.0.1", 9000)
 
 
 
@@ -199,6 +202,8 @@ class Maze:
             glEnd()
 
     def handle_collisions(self, ball: Ball):
+        collided = False
+
         for (x, z, w, d) in self.walls:
             closest_x = clamp(ball.x, x, x + w)
             closest_z = clamp(ball.z, z, z + d)
@@ -208,6 +213,8 @@ class Maze:
             dist2 = dx * dx + dz * dz
 
             if dist2 < BALL_RADIUS * BALL_RADIUS:
+                collided = True   # COLLISIONE
+
                 dist = math.sqrt(dist2) if dist2 != 0 else 1e-6
                 overlap = BALL_RADIUS - dist
 
@@ -217,7 +224,6 @@ class Maze:
                 ball.x += nx * overlap
                 ball.z += nz * overlap
 
-                # decomposizione v in normale + tangenziale
                 vdotn = ball.vx * nx + ball.vz * nz
                 vnx = vdotn * nx
                 vnz = vdotn * nz
@@ -226,6 +232,9 @@ class Maze:
 
                 ball.vx = (-vnx * WALL_RESTITUTION) + (vtx * WALL_TANGENTIAL)
                 ball.vz = (-vnz * WALL_RESTITUTION) + (vtz * WALL_TANGENTIAL)
+
+        return collided
+
 
 
 # ---------------------------------------------------
@@ -475,33 +484,36 @@ def main():
 
             # fisica + collisioni
             ball.update(dt, tilt_x_deg, tilt_z_deg)
-            maze.handle_collisions(ball)
+            hit_wall = maze.handle_collisions(ball)
+
+            if hit_wall:
+                bouncing.send_message("/bouncing", 1)
 
             # caduta nei buchi
             fell = False
             for (hx, hz, r) in HOLES:
                 if math.hypot(ball.x - hx, ball.z - hz) < (r - BALL_RADIUS * 0.25):
                     fell = True
-                    client.send_message("/boom", 1)
+                    boom.send_message("/boom", 1)
                     break
 
             if fell:
                 lives -= 1
                 if lives <= 0:
                     state = "GAME_OVER"
-                    client.send_message("/boom", 1)
+                    boom.send_message("/boom", 1)
                 else:
                     ball.reset()
                     tilt_x_deg = 0.0
                     tilt_z_deg = 0.0
                     accel.tilt_x_deg = 0.0
                     accel.tilt_z_deg = 0.0
-                    client.send_message("/boom", 1)
+                    boom.send_message("/boom", 1)
 
             # vittoria
             if point_in_rect(ball.x, ball.z, GOAL_RECT):
                 state = "WIN"
-                client.send_message("/boom", 1)
+                boom.send_message("/boom", 1)
 
         # -------- RENDER 3D --------
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
