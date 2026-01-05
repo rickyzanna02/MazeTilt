@@ -11,10 +11,12 @@ from OpenGL.GLU import *
 #audio OSC
 from pythonosc.udp_client import SimpleUDPClient
 
-
-boom = SimpleUDPClient("127.0.0.1", 9001)
 bouncing = SimpleUDPClient("127.0.0.1", 9000)
+boom = SimpleUDPClient("127.0.0.1", 9001)
+rolling = SimpleUDPClient("127.0.0.1", 9002)
 
+MAX_ROLL_SPEED = 8.0   # da tarare, va bene come punto di partenza
+ROLL_ON_THRESHOLD = 0.05
 
 
 # ---------------------------------------------------
@@ -448,6 +450,7 @@ def main():
     tilt_z_deg = 0.0
 
     running = True
+    rolling_on = False
     while running:
         dt = clock.tick(FPS) / 1000.0
 
@@ -486,6 +489,30 @@ def main():
             ball.update(dt, tilt_x_deg, tilt_z_deg)
             hit_wall = maze.handle_collisions(ball)
 
+            # ---------------------------------------------------
+            # ROLLING SOUND (ON/OFF + VELOCITY)
+            # ---------------------------------------------------
+
+            # velocità reale della pallina
+            speed = math.sqrt(ball.vx * ball.vx + ball.vz * ball.vz)
+
+            if speed > ROLL_ON_THRESHOLD:
+                # accendi rolling se era spento
+                if not rolling_on:
+                    rolling.send_message("/rolling/on", 1)
+                    rolling_on = True
+
+                # mappa velocità fisica -> velocity sonora
+                rolling_velocity = min((speed / MAX_ROLL_SPEED) * 5.0, 5.0)
+
+                rolling.send_message("/rolling/velocity", rolling_velocity)
+
+            else:
+                # spegni rolling se la pallina è ferma
+                if rolling_on:
+                    rolling.send_message("/rolling/on", 0)
+                    rolling_on = False
+
             if hit_wall:
                 bouncing.send_message("/bouncing", 1)
 
@@ -502,6 +529,8 @@ def main():
                 if lives <= 0:
                     state = "GAME_OVER"
                     boom.send_message("/boom", 1)
+                    rolling.send_message("/rolling/on", 0)
+                    rolling_on = False
                 else:
                     ball.reset()
                     tilt_x_deg = 0.0
@@ -514,6 +543,8 @@ def main():
             if point_in_rect(ball.x, ball.z, GOAL_RECT):
                 state = "WIN"
                 boom.send_message("/boom", 1)
+                rolling.send_message("/rolling/on", 0)
+                rolling_on = False
 
         # -------- RENDER 3D --------
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)

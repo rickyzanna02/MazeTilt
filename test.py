@@ -1,8 +1,32 @@
-from pythonosc.udp_client import SimpleUDPClient
 import time
+from pythonosc.udp_client import SimpleUDPClient
 
-boom = SimpleUDPClient("127.0.0.1", 9001)
-bouncing = SimpleUDPClient("127.0.0.1", 9000)
-boom.send_message("/boom", 1)
-time.sleep(0.5)
-bouncing.send_message("/bouncing", 1)
+# OSC client verso Pure Data
+rolling = SimpleUDPClient("127.0.0.1", 9002)
+
+print("TEST rolling velocity")
+
+# accendi rolling
+print("ON")
+rolling.send_message("/rolling/on", 1)
+time.sleep(1.0)
+
+# salita di velocity
+print("Increase velocity")
+for v in [0.2, 0.5, 1.0, 2.0, 3.0, 4.0]:
+    print(f"velocity = {v}")
+    rolling.send_message("/rolling/velocity", v)
+    time.sleep(1.5)
+
+# discesa di velocity
+print("Decrease velocity")
+for v in [3.0, 2.0, 1.0, 0.5, 0.2]:
+    print(f"velocity = {v}")
+    rolling.send_message("/rolling/velocity", v)
+    time.sleep(1.5)
+
+# spegni rolling
+print("OFF")
+rolling.send_message("/rolling/on", 0)
+
+print("FINE TEST")
