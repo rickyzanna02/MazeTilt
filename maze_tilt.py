@@ -49,6 +49,14 @@ HOLES = [
     (-2.5, 10.0, 1.0),
 ]
 
+HOLES_AREA = [
+    (-5.0, -6.0, 3.0),
+    (3.5, -1.0, 3.0),
+    (4.0, 13.0, 3.0),
+    (-2.5, 10.0, 3.0),
+
+]
+
 # Traguardo: rettangolo sul piano XZ (x, z, w, d)
 GOAL_RECT = (MAZE_WIDTH / 2.0 - 3.0, MAZE_DEPTH / 2.0 - 3.5, 2.2, 2.2)
 
@@ -454,6 +462,8 @@ def main():
 
     running = True
     rolling_on = False
+    in_hole_area = False
+
     while running:
         dt = clock.tick(FPS) / 1000.0
 
@@ -468,6 +478,8 @@ def main():
             lives = START_LIVES
             state = "PLAY"
             ball.reset()
+            in_hole_area = False
+
             tilt_x_deg = 0.0
             tilt_z_deg = 0.0
             accel.tilt_x_deg = 0.0
@@ -476,6 +488,8 @@ def main():
         # Reset soft (SPACE) solo durante gioco
         if keys[K_SPACE] and state == "PLAY":
             ball.reset()
+            in_hole_area = False
+
             tilt_x_deg = 0.0
             tilt_z_deg = 0.0
             accel.tilt_x_deg = 0.0
@@ -520,6 +534,24 @@ def main():
                 bouncing.send_message("/bouncing", 1)
                 accel.vibra()
 
+            # ---------------------------------------------------
+            # HOLE AREA → VIBRAZIONE MOTORE
+            # ---------------------------------------------------
+            inside_area = False
+
+            for (hx, hz, r) in HOLES_AREA:
+                if math.hypot(ball.x - hx, ball.z - hz) < r:
+                    inside_area = True
+                    break
+
+            # entra nell'area → vibra UNA volta
+            if inside_area and not in_hole_area:
+                accel.vibra()
+
+            # aggiorna stato
+            in_hole_area = inside_area
+
+
             # caduta nei buchi
             fell = False
             for (hx, hz, r) in HOLES:
@@ -537,6 +569,8 @@ def main():
                     rolling_on = False
                 else:
                     ball.reset()
+                    in_hole_area = False
+
                     tilt_x_deg = 0.0
                     tilt_z_deg = 0.0
                     accel.tilt_x_deg = 0.0
