@@ -424,6 +424,9 @@ class AccelController:
         self.tilt_z_deg = (1 - a) * self.tilt_z_deg + a * target_tilt_z
 
         return (self.tilt_x_deg, self.tilt_z_deg)
+    
+    def vibra(self):
+        self.ser.write(b'V')
 
 
 
@@ -515,6 +518,7 @@ def main():
 
             if hit_wall:
                 bouncing.send_message("/bouncing", 1)
+                accel.vibra()
 
             # caduta nei buchi
             fell = False
