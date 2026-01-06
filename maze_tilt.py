@@ -1,4 +1,3 @@
-import sys
 import math
 import time
 import serial
@@ -6,7 +5,6 @@ import pygame
 from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
-#audio OSC
 from pythonosc.udp_client import SimpleUDPClient
 
 bouncing = SimpleUDPClient("127.0.0.1", 9000)
@@ -15,52 +13,34 @@ rolling = SimpleUDPClient("127.0.0.1", 9002)
 
 MAX_ROLL_SPEED = 8.0   
 ROLL_ON_THRESHOLD = 0.05
-
-
-# ---------------------------------------------------
-# CONFIGURAZIONE GENERALE
-# ---------------------------------------------------
 WIN_WIDTH, WIN_HEIGHT = 1000, 700
 FPS = 60
-
 MAZE_WIDTH = 20.0
 MAZE_DEPTH = 30.0
-
 BALL_RADIUS = 0.6
 GRAVITY = 15.0
 FRICTION = 0.995
-
 MAX_TILT_DEG = 18.0
 TILT_STEP = 0.8
-
 WALL_RESTITUTION = 0.80
 WALL_TANGENTIAL = 0.96
-
 START_POS = (0.0, -(MAZE_DEPTH / 2.0) + 3.0)  # (x, z)
 START_LIVES = 3
-
-# Buchi: (x, z, r)
+HOLE_VIBRATION_MAX = 220   # PWM max
+HOLE_VIBRATION_MIN = 40    # min vibration
+GOAL_RECT = (MAZE_WIDTH / 2.0 - 3.0, MAZE_DEPTH / 2.0 - 3.5, 2.2, 2.2)# Goal: rect in XZ plane (x, z, w, d)
 HOLES = [
-    (-5.0, -6.0, 1.0),
+    (-5.0, -6.0, 1.0),# holes: (x, z, r)
     (3.5, -1.0, 1.0),
     (4.0, 13.0, 1.0),
     (-2.5, 10.0, 1.0),
 ]
-
 HOLES_AREA = [
     (-5.0, -6.0, 3.0),
     (3.5, -1.0, 3.0),
     (4.0, 13.0, 3.0),
     (-2.5, 10.0, 3.0),
-
 ]
-
-HOLE_VIBRATION_MAX = 220   # PWM max
-HOLE_VIBRATION_MIN = 40    # vibrazione minima percepibile
-
-# Traguardo: rettangolo sul piano XZ (x, z, w, d)
-GOAL_RECT = (MAZE_WIDTH / 2.0 - 3.0, MAZE_DEPTH / 2.0 - 3.5, 2.2, 2.2)
-
 
 # ---------------------------------------------------
 # UTILS
@@ -68,14 +48,13 @@ GOAL_RECT = (MAZE_WIDTH / 2.0 - 3.0, MAZE_DEPTH / 2.0 - 3.5, 2.2, 2.2)
 def clamp(v, vmin, vmax):
     return max(vmin, min(vmax, v))
 
-
 def point_in_rect(px, pz, rect):
     x, z, w, d = rect
     return (x <= px <= x + w) and (z <= pz <= z + d)
 
 
 # ---------------------------------------------------
-# PALLINA
+# BALL
 # ---------------------------------------------------
 class Ball:
     def __init__(self, x, z):
@@ -108,9 +87,8 @@ class Ball:
         self.x += self.vx * dt
         self.z += self.vz * dt
 
-
 # ---------------------------------------------------
-# LABIRINTO
+# MAZE
 # ---------------------------------------------------
 class Maze:
     def __init__(self):
@@ -125,12 +103,12 @@ class Maze:
         self.walls = []
 
         # -------------------------
-        # BORDI (come prima)
+        # BORDER
         # -------------------------
-        self.walls.append((-w / 2.0, -d / 2.0, w, t))             # vicino
-        self.walls.append((-w / 2.0, d / 2.0 - t, w, t))          # lontano
-        self.walls.append((-w / 2.0, -d / 2.0, t, d))             # sinistra
-        self.walls.append((w / 2.0 - t, -d / 2.0, t, d))          # destra
+        self.walls.append((-w / 2.0, -d / 2.0, w, t))             # near
+        self.walls.append((-w / 2.0, d / 2.0 - t, w, t))          # far
+        self.walls.append((-w / 2.0, -d / 2.0, t, d))             # left
+        self.walls.append((w / 2.0 - t, -d / 2.0, t, d))          # right
 
         # Area interna utile (per non sforare)
         xmin = -w / 2.0 + t
@@ -246,8 +224,6 @@ class Maze:
 
         return collided
 
-
-
 # ---------------------------------------------------
 # OPENGL HELPERS
 # ---------------------------------------------------
@@ -268,24 +244,13 @@ def draw_disk(cx, cy, cz, r, segments=24):
 
 def init_opengl():
     glEnable(GL_DEPTH_TEST)
-
-    # ✅ Niente illuminazione: colori costanti, non cambia con inclinazione
-    glDisable(GL_LIGHTING)
+    glDisable(GL_LIGHTING) #  No lighting: constant colors, no change with inclination
     glDisable(GL_LIGHT0)
-
-    # (opzionale) disabilita anche cose che possono interferire
-    glDisable(GL_COLOR_MATERIAL)
-    glDisable(GL_NORMALIZE)
-
-    # sfondo più chiaro
-    glClearColor(0.85, 0.90, 0.98, 1.0)
-
+    glClearColor(0.85, 0.90, 0.98, 1.0) # lighter background
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
     gluPerspective(50.0, WIN_WIDTH / WIN_HEIGHT, 0.1, 200.0)
     glMatrixMode(GL_MODELVIEW)
-
-
 
 def setup_fixed_camera_handheld():
     # un po' più alta (così con tilt su non perdi il labirinto)
@@ -407,17 +372,12 @@ class AccelController:
         ay = y - self.oy
         az = z - self.oz
 
-        # Evita divisioni strane se az ~ 0
-        # Angoli da accelerazione (approssimazione statica)
         # roll  ~ inclinazione sx/dx (usa asse X rispetto a Z)
         roll  = math.degrees(math.atan2(ax, az if abs(az) > 1e-6 else 1e-6))
         # pitch ~ inclinazione avanti/indietro (usa asse Y rispetto a Z)
         pitch = math.degrees(math.atan2(ay, az if abs(az) > 1e-6 else 1e-6))
 
-        # ---- Mappa sui tilt del tuo gioco ----
-        # Nel tuo rendering:
-        #   glRotatef(tilt_x_deg, 1,0,0)  (pitch)
-        #   glRotatef(-tilt_z_deg, 0,0,1) (roll)
+        # Target tilt
         target_tilt_x = pitch
         target_tilt_z = roll
 
@@ -435,9 +395,7 @@ class AccelController:
         return (self.tilt_x_deg, self.tilt_z_deg)
     
     def vibra(self):
-        self.ser.write(b'V\n')
-
-
+        self.ser.write(b'V\n') # comando vibrazione mandato al teensy
 
 # ---------------------------------------------------
 # MAIN
@@ -463,7 +421,11 @@ def main():
 
     running = True
     rolling_on = False
-    in_hole_area = False
+
+    def reset_tilt(accel):
+        accel.tilt_x_deg = 0.0
+        accel.tilt_z_deg = 0.0
+        return 0.0, 0.0    
 
     while running:
         dt = clock.tick(FPS) / 1000.0
@@ -479,22 +441,16 @@ def main():
             lives = START_LIVES
             state = "PLAY"
             ball.reset()
-            in_hole_area = False
+            
 
-            tilt_x_deg = 0.0
-            tilt_z_deg = 0.0
-            accel.tilt_x_deg = 0.0
-            accel.tilt_z_deg = 0.0
+            reset_tilt(accel)
 
         # Reset soft (SPACE) solo durante gioco
         if keys[K_SPACE] and state == "PLAY":
             ball.reset()
-            in_hole_area = False
+            
 
-            tilt_x_deg = 0.0
-            tilt_z_deg = 0.0
-            accel.tilt_x_deg = 0.0
-            accel.tilt_z_deg = 0.0
+            reset_tilt(accel)
 
         if state == "PLAY":
             # --- INPUT DA ACCELEROMETRO ---
@@ -585,12 +541,9 @@ def main():
                     rolling_on = False
                 else:
                     ball.reset()
-                    in_hole_area = False
+                    
 
-                    tilt_x_deg = 0.0
-                    tilt_z_deg = 0.0
-                    accel.tilt_x_deg = 0.0
-                    accel.tilt_z_deg = 0.0
+                    reset_tilt(accel)
                     boom.send_message("/boom", 1)
 
             # vittoria
@@ -622,7 +575,7 @@ def main():
 
     accel.close()
     pygame.quit()
-    sys.exit()
+    
 
 if __name__ == "__main__":
     main()
