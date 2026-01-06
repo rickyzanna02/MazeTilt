@@ -1,0 +1,4 @@
+pygame==2.6.1
+PyOpenGL==3.1.10
+pyserial==3.5
+python_osc==1.9.3

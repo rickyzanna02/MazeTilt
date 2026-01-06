@@ -2,64 +2,73 @@
   Teensy 3.6
   - Accelerometro su A0 A1 A2 -> Serial verso Pygame
   - ERM motor su pin 2 (PWM)
-  - Comando 'V' da Serial per vibrare
+  - 'V'  = vibrazione impulsiva (muri)
+  - 'H:x' = vibrazione continua (area buco)
 */
 
 int motorPin = 2;
 
-// Vibrazione
-int vibrationPower = 200;            // 0–255
-unsigned long vibrationTime = 150;   // ms
-bool vibrating = false;
-unsigned long vibrationStart = 0;
+// ------------------ VIBRAZIONE IMPULSO ------------------
+int impulsePower = 220;
+unsigned long impulseTime = 120;
+bool impulseActive = false;
+unsigned long impulseStart = 0;
 
-// Accelerometro
+// ------------------ VIBRAZIONE CONTINUA ------------------
+int holePower = 0;
+
+// ------------------ ACCELEROMETRO ------------------
 const int accelX = A0;
 const int accelY = A1;
 const int accelZ = A2;
 
 unsigned long lastAccelSend = 0;
-const unsigned long accelInterval = 10; // ms (100 Hz)
+const unsigned long accelInterval = 10;
 
 void setup() {
   pinMode(motorPin, OUTPUT);
   analogWrite(motorPin, 0);
-
   Serial.begin(115200);
 }
 
 void loop() {
 
-  /* ---------- RICEZIONE COMANDI DA PYGAME ---------- */
-  while (Serial.available() > 0) {
-    char cmd = Serial.read();
+  // -------- SERIAL INPUT --------
+  while (Serial.available()) {
+    String cmd = Serial.readStringUntil('\n');
 
-    if (cmd == 'V') {   // vibrazione
-      analogWrite(motorPin, vibrationPower);
-      vibrating = true;
-      vibrationStart = millis();
+    // Impulso (muro)
+    if (cmd == "V") {
+      impulseActive = true;
+      impulseStart = millis();
+    }
+
+    // Vibrazione area buco
+    if (cmd.startsWith("H:")) {
+      holePower = constrain(cmd.substring(2).toInt(), 0, 255);
     }
   }
 
-  /* ---------- GESTIONE TIMER VIBRAZIONE ---------- */
-  if (vibrating && millis() - vibrationStart >= vibrationTime) {
-    analogWrite(motorPin, 0);
-    vibrating = false;
+  // -------- GESTIONE IMPULSO --------
+  if (impulseActive && millis() - impulseStart > impulseTime) {
+    impulseActive = false;
   }
 
-  /* ---------- INVIO DATI ACCELEROMETRO ---------- */
+  // -------- OUTPUT MOTORE --------
+  int outputPower = max(
+    impulseActive ? impulsePower : 0,
+    holePower
+  );
+
+  analogWrite(motorPin, outputPower);
+
+  // -------- INVIO ACCELEROMETRO --------
   if (millis() - lastAccelSend >= accelInterval) {
     lastAccelSend = millis();
-
-    int x = analogRead(accelX);
-    int y = analogRead(accelY);
-    int z = analogRead(accelZ);
-
-    // formato CSV: x,y,z\n
-    Serial.print(x);
+    Serial.print(analogRead(accelX));
     Serial.print(",");
-    Serial.print(y);
+    Serial.print(analogRead(accelY));
     Serial.print(",");
-    Serial.println(z);
+    Serial.println(analogRead(accelZ));
   }
 }

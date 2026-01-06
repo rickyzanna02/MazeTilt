@@ -4,10 +4,8 @@ import time
 import serial
 import pygame
 from pygame.locals import *
-
 from OpenGL.GL import *
 from OpenGL.GLU import *
-
 #audio OSC
 from pythonosc.udp_client import SimpleUDPClient
 
@@ -15,7 +13,7 @@ bouncing = SimpleUDPClient("127.0.0.1", 9000)
 boom = SimpleUDPClient("127.0.0.1", 9001)
 rolling = SimpleUDPClient("127.0.0.1", 9002)
 
-MAX_ROLL_SPEED = 8.0   # da tarare, va bene come punto di partenza
+MAX_ROLL_SPEED = 8.0   
 ROLL_ON_THRESHOLD = 0.05
 
 
@@ -56,6 +54,9 @@ HOLES_AREA = [
     (-2.5, 10.0, 3.0),
 
 ]
+
+HOLE_VIBRATION_MAX = 220   # PWM max
+HOLE_VIBRATION_MIN = 40    # vibrazione minima percepibile
 
 # Traguardo: rettangolo sul piano XZ (x, z, w, d)
 GOAL_RECT = (MAZE_WIDTH / 2.0 - 3.0, MAZE_DEPTH / 2.0 - 3.5, 2.2, 2.2)
@@ -434,7 +435,7 @@ class AccelController:
         return (self.tilt_x_deg, self.tilt_z_deg)
     
     def vibra(self):
-        self.ser.write(b'V')
+        self.ser.write(b'V\n')
 
 
 
@@ -535,21 +536,36 @@ def main():
                 accel.vibra()
 
             # ---------------------------------------------------
-            # HOLE AREA → VIBRAZIONE MOTORE
+            # HOLE AREA → VIBRAZIONE CONTINUA PROPORZIONALE
             # ---------------------------------------------------
+
+            hole_vibration = 0
             inside_area = False
 
-            for (hx, hz, r) in HOLES_AREA:
-                if math.hypot(ball.x - hx, ball.z - hz) < r:
+            for (hx, hz, area_r) in HOLES_AREA:
+                dist = math.hypot(ball.x - hx, ball.z - hz)
+
+                if dist < area_r:
                     inside_area = True
+
+                    # trova raggio del buco vero
+                    hole_r = next(r for (x, z, r) in HOLES if x == hx and z == hz)
+
+                    # normalizza distanza (0 = centro buco, 1 = bordo area)
+                    t = clamp((dist - hole_r) / (area_r - hole_r), 0.0, 1.0)
+
+                    # inverti: più vicino → più vibrazione
+                    intensity = HOLE_VIBRATION_MIN + (1.0 - t) * (HOLE_VIBRATION_MAX - HOLE_VIBRATION_MIN)
+
+                    hole_vibration = int(intensity)
                     break
 
-            # entra nell'area → vibra UNA volta
-            if inside_area and not in_hole_area:
-                accel.vibra()
+            # invio comando al teensy
+            if inside_area:
+                accel.ser.write(f"H:{hole_vibration}\n".encode())
+            else:
+                accel.ser.write(b"H:0\n")
 
-            # aggiorna stato
-            in_hole_area = inside_area
 
 
             # caduta nei buchi
