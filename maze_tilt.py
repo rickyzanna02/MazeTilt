@@ -29,18 +29,56 @@ START_LIVES = 3
 HOLE_VIBRATION_MAX = 220   # PWM max
 HOLE_VIBRATION_MIN = 40    # min vibration
 GOAL_RECT = (MAZE_WIDTH / 2.0 - 3.0, MAZE_DEPTH / 2.0 - 3.5, 2.2, 2.2)# Goal: rect in XZ plane (x, z, w, d)
-HOLES = [
-    (-5.0, -6.0, 1.0),# holes: (x, z, r)
-    (3.5, -1.0, 1.0),
-    (4.0, 13.0, 1.0),
-    (-2.5, 10.0, 1.0),
-]
-HOLES_AREA = [
-    (-5.0, -6.0, 3.0),
-    (3.5, -1.0, 3.0),
-    (4.0, 13.0, 3.0),
-    (-2.5, 10.0, 3.0),
-]
+
+
+LEVELS = {
+
+    1: {
+        "walls": [            
+            # muro verticale dall’alto, x = 7 da sx, lungo 15
+        ("min", "max", 10.0, -29.0, "T", 15.0),
+
+        # muro orizzontale da sx, z = 25 dall’alto, lungo 10
+        ("min", "max", 0.0, -5.0, 10.0, "T"),
+        ],
+        "holes": [              
+            (3.0, 13.0, 1.0),
+        ]
+    },
+
+    2: {
+        "walls": [            
+            ("min", "min", 0.0, 6.0, 15.0, "T"),            
+            ("max", "min", -15.0, 12.0, 15.0, "T"),            
+            ("min", "min", 0.0, 18.0, 15.0, "T"),            
+            ("max", "min", -15.0, 24.0, 15.0, "T"),
+        ],
+        "holes": [           
+            (-2.0, -5.0, 1.0),
+            (-2.0, 7.0, 1.0),
+            (3.0, 14.0, 1.0),
+        ]
+    },
+
+    3: {
+        "walls": [
+            ("min", "min", 0.0, 6.0, "FULL-8", "T"), 
+            ("max", "min", -4.0, 6.0, "T", 10.0),
+            ("min", "min", 4.0, 16.0, "FULL-4", "T"),
+            ("min", "min", 4.0, 16.0, "T", 8.0),
+            ("max", "max", -8.0, -9.0, 5.0, "T"),
+        ],
+        "holes": [
+            (-5.0, -6.0, 1.0),
+            (3.5, -1.0, 1.0),
+            (4.0, 13.0, 1.0),
+            (-2.5, 10.0, 1.0),
+        ]
+    }
+
+    
+}
+
 
 # ---------------------------------------------------
 # UTILS
@@ -91,9 +129,33 @@ class Ball:
 # MAZE
 # ---------------------------------------------------
 class Maze:
-    def __init__(self):
+    def __init__(self, level=1):
+        self.level = level
         self.walls = []
+        self.holes = []
+        self.holes_area = []
         self._build_maze()
+
+    def add_internal_walls(self, wall_defs, xmin, xmax, zmin, zmax, t):
+        for (x_ref, z_ref, dx, dz, w, d) in wall_defs:
+            x0 = xmin if x_ref == "min" else xmax
+            z0 = zmin if z_ref == "min" else zmax
+
+            if isinstance(w, str) and w.startswith("FULL"):
+                offset = float(w.split("-")[1])
+                w = (xmax - xmin) - offset
+            if w == "T":
+                w = t
+
+            if d == "T":
+                d = t
+
+            x = x0 + dx
+            z = z0 + dz
+
+            self.walls.append((x, z, w, d))
+
+
 
     def _build_maze(self):
         w = MAZE_WIDTH
@@ -116,13 +178,21 @@ class Maze:
         zmin = -d / 2.0 + t
         zmax =  d / 2.0 - t
 
-      
-        self.walls.append((xmin + 0.0, zmin + 6.0, (xmax - xmin) - 6.0, t))
-        self.walls.append((xmax - 4.0, zmin + 6.0, t, 10.0))
-        self.walls.append((xmin + 4.0, zmin + 16.0, (xmax - xmin) - 4.0, t))
-        self.walls.append((xmin + 4.0, zmin + 16.0, t, 8.0))
-        self.walls.append((xmax - 8.0, zmax - 9.0, 5.0, t))
+        level_data = LEVELS.get(self.level, LEVELS[1])
 
+        # ---- muri ----
+        self.add_internal_walls(
+            level_data["walls"],
+            xmin, xmax, zmin, zmax, t
+        )
+
+        # ---- buchi ----
+        self.holes = level_data["holes"]
+
+        # ---- hole areas (derivate automaticamente) ----
+        self.holes_area = [
+            (x, z, r * 3.0) for (x, z, r) in self.holes
+        ]
 
     def draw(self):
         # piano
@@ -146,8 +216,9 @@ class Maze:
 
         # buchi (dischi scuri)
         glColor3f(0.12, 0.12, 0.12)
-        for (hx, hz, r) in HOLES:
+        for (hx, hz, r) in self.holes:
             draw_disk(hx, 0.01, hz, r, segments=24)
+
 
         # muri
         glColor3f(0.20, 0.20, 0.20)
@@ -266,13 +337,34 @@ def setup_fixed_camera_handheld():
 # ---------------------------------------------------
 # UI 2D OVERLAY (Pygame sopra OpenGL)
 # ---------------------------------------------------
-def draw_overlay_text(screen, font, lines, x=15, y=15):
-    # disegna testo 2D usando Pygame (sopra OpenGL)
-    yy = y
-    for line in lines:
-        surf = font.render(line, True, (10, 10, 10))
-        screen.blit(surf, (x, yy))
-        yy += surf.get_height() + 4
+# ---------------------------------------------------
+# UI 2D HUD (OPENGL SAFE)
+# ---------------------------------------------------
+def draw_text_gl(x, y, text, font, color=(10, 10, 10)):
+    text_surface = font.render(text, True, color)
+    text_data = pygame.image.tostring(text_surface, "RGBA", True)
+    width, height = text_surface.get_size()
+
+    glWindowPos2d(x, WIN_HEIGHT - y - height)
+    glDrawPixels(width, height, GL_RGBA, GL_UNSIGNED_BYTE, text_data)
+
+
+def draw_hud_gl(font, level, max_level, lives, state):
+    y = 20
+    line_h = 24
+
+    draw_text_gl(20, y, f"Level: {level} / {max_level}", font)
+    y += line_h
+    draw_text_gl(20, y, f"Lives: {lives}", font)
+    y += line_h
+
+    if state == "GAME_OVER":
+        y += line_h
+        draw_text_gl(20, y, "GAME OVER (R to restart)", font, (180, 0, 0))
+    elif state == "WIN":
+        y += line_h
+        draw_text_gl(20, y, "YOU WIN! (R to restart)", font, (0, 120, 0))
+
 
 
 class AccelController:
@@ -402,6 +494,22 @@ class AccelController:
 # ---------------------------------------------------
 def main():
     pygame.init()
+    ###
+    font = pygame.font.SysFont("Arial", 20, bold=True)
+
+    current_level = 1
+    max_level = max(LEVELS.keys())
+
+    maze = Maze(level=current_level)
+    ball = Ball(*START_POS)
+
+    lives = START_LIVES
+    state = "PLAY"   # PLAY, WIN, GAME_OVER
+
+    ##
+
+
+
     screen = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT), DOUBLEBUF | OPENGL)
     pygame.display.set_caption("Labirinto 3D – vite, buchi, traguardo")
     clock = pygame.time.Clock()
@@ -410,8 +518,12 @@ def main():
 
     init_opengl()
 
-    maze = Maze()
+    current_level = 1
+    max_level = max(LEVELS.keys())
+
+    maze = Maze(level=1)
     ball = Ball(*START_POS)
+
 
     lives = START_LIVES
     state = "PLAY"  # PLAY, WIN, GAME_OVER
@@ -425,7 +537,13 @@ def main():
     def reset_tilt(accel):
         accel.tilt_x_deg = 0.0
         accel.tilt_z_deg = 0.0
-        return 0.0, 0.0    
+        return 0.0, 0.0   
+
+    def load_level(level):
+        nonlocal maze, ball
+        maze = Maze(level=level)
+        ball.reset()
+        reset_tilt(accel) 
 
     while running:
         dt = clock.tick(FPS) / 1000.0
@@ -439,11 +557,12 @@ def main():
         # Restart dopo win/gameover con R
         if keys[K_r] and state in ("WIN", "GAME_OVER"):
             lives = START_LIVES
-            state = "PLAY"
+            current_level = 1
+            maze = Maze(level=current_level)
             ball.reset()
-            
-
             reset_tilt(accel)
+            state = "PLAY"
+
 
         # Reset soft (SPACE) solo durante gioco
         if keys[K_SPACE] and state == "PLAY":
@@ -498,14 +617,14 @@ def main():
             hole_vibration = 0
             inside_area = False
 
-            for (hx, hz, area_r) in HOLES_AREA:
+            for (hx, hz, area_r) in maze.holes_area:
                 dist = math.hypot(ball.x - hx, ball.z - hz)
 
                 if dist < area_r:
                     inside_area = True
 
                     # trova raggio del buco vero
-                    hole_r = next(r for (x, z, r) in HOLES if x == hx and z == hz)
+                    hole_r = next(r for (x, z, r) in maze.holes if x == hx and z == hz)
 
                     # normalizza distanza (0 = centro buco, 1 = bordo area)
                     t = clamp((dist - hole_r) / (area_r - hole_r), 0.0, 1.0)
@@ -526,7 +645,7 @@ def main():
 
             # caduta nei buchi
             fell = False
-            for (hx, hz, r) in HOLES:
+            for (hx, hz, r) in maze.holes:
                 if math.hypot(ball.x - hx, ball.z - hz) < (r - BALL_RADIUS * 0.25):
                     fell = True
                     boom.send_message("/boom", 1)
@@ -534,24 +653,32 @@ def main():
 
             if fell:
                 lives -= 1
+                boom.send_message("/boom", 1)
                 if lives <= 0:
-                    state = "GAME_OVER"
-                    boom.send_message("/boom", 1)
+                    state = "GAME_OVER"                    
                     rolling.send_message("/rolling/on", 0)
                     rolling_on = False
                 else:
-                    ball.reset()
-                    
-
+                    ball.reset()                   
                     reset_tilt(accel)
-                    boom.send_message("/boom", 1)
+                    
 
             # vittoria
             if point_in_rect(ball.x, ball.z, GOAL_RECT):
-                state = "WIN"
                 boom.send_message("/boom", 1)
                 rolling.send_message("/rolling/on", 0)
                 rolling_on = False
+
+                if current_level < max_level:
+                    current_level += 1
+                    maze = Maze(level=current_level)
+                    ball.reset()
+                    reset_tilt(accel)
+                    state = "PLAY"
+                else:
+                    state = "WIN"
+
+
 
         # -------- RENDER 3D --------
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -571,7 +698,22 @@ def main():
         glPopMatrix()
 
         glPopMatrix()
+
+        # ---------- HUD OPENGL ----------
+        glDisable(GL_DEPTH_TEST)
+
+        glEnable(GL_BLEND)
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        draw_hud_gl(font, current_level, max_level, lives, state)
+
+        glDisable(GL_BLEND)
+        glEnable(GL_DEPTH_TEST)
+
         pygame.display.flip()
+
+
+
 
     accel.close()
     pygame.quit()
