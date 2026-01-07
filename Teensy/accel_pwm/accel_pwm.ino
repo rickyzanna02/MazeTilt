@@ -1,12 +1,14 @@
 /*
   Teensy 3.6
   - Accelerometro su A0 A1 A2 -> Serial verso Pygame
-  - ERM motor su pin 2 (PWM)
+  - 2 ERM motor su pin A8 e A9 (PWM, insieme)
   - 'V'  = vibrazione impulsiva (muri)
   - 'H:x' = vibrazione continua (area buco)
 */
 
-int motorPin = 2;
+// ------------------ MOTORI ------------------
+const int motorPin1 = A8;
+const int motorPin2 = A9;
 
 // ------------------ VIBRAZIONE IMPULSO ------------------
 int impulsePower = 220;
@@ -26,8 +28,12 @@ unsigned long lastAccelSend = 0;
 const unsigned long accelInterval = 10;
 
 void setup() {
-  pinMode(motorPin, OUTPUT);
-  analogWrite(motorPin, 0);
+  pinMode(motorPin1, OUTPUT);
+  pinMode(motorPin2, OUTPUT);
+
+  analogWrite(motorPin1, 0);
+  analogWrite(motorPin2, 0);
+
   Serial.begin(115200);
 }
 
@@ -36,6 +42,7 @@ void loop() {
   // -------- SERIAL INPUT --------
   while (Serial.available()) {
     String cmd = Serial.readStringUntil('\n');
+    cmd.trim();
 
     // Impulso (muro)
     if (cmd == "V") {
@@ -54,13 +61,14 @@ void loop() {
     impulseActive = false;
   }
 
-  // -------- OUTPUT MOTORE --------
+  // -------- OUTPUT MOTORI --------
   int outputPower = max(
     impulseActive ? impulsePower : 0,
     holePower
   );
 
-  analogWrite(motorPin, outputPower);
+  analogWrite(motorPin1, outputPower);
+  analogWrite(motorPin2, outputPower);
 
   // -------- INVIO ACCELEROMETRO --------
   if (millis() - lastAccelSend >= accelInterval) {
