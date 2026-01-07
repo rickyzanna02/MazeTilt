@@ -6,10 +6,7 @@ from pygame.locals import *
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from pythonosc.udp_client import SimpleUDPClient
-
-bouncing = SimpleUDPClient("127.0.0.1", 9000)
-boom = SimpleUDPClient("127.0.0.1", 9001)
-rolling = SimpleUDPClient("127.0.0.1", 9002)
+import argparse
 
 MAX_ROLL_SPEED = 8.0   
 ROLL_ON_THRESHOLD = 0.05
@@ -29,7 +26,6 @@ START_LIVES = 3
 HOLE_VIBRATION_MAX = 220   # PWM max
 HOLE_VIBRATION_MIN = 40    # min vibration
 GOAL_RECT = (MAZE_WIDTH / 2.0 - 3.0, MAZE_DEPTH / 2.0 - 3.5, 2.2, 2.2)# Goal: rect in XZ plane (x, z, w, d)
-
 
 LEVELS = {
 
@@ -74,11 +70,8 @@ LEVELS = {
             (4.0, 13.0, 1.0),
             (-2.5, 10.0, 1.0),
         ]
-    }
-
-    
+    }    
 }
-
 
 # ---------------------------------------------------
 # UTILS
@@ -89,7 +82,6 @@ def clamp(v, vmin, vmax):
 def point_in_rect(px, pz, rect):
     x, z, w, d = rect
     return (x <= px <= x + w) and (z <= pz <= z + d)
-
 
 # ---------------------------------------------------
 # BALL
@@ -155,8 +147,6 @@ class Maze:
 
             self.walls.append((x, z, w, d))
 
-
-
     def _build_maze(self):
         w = MAZE_WIDTH
         d = MAZE_DEPTH
@@ -218,7 +208,6 @@ class Maze:
         glColor3f(0.12, 0.12, 0.12)
         for (hx, hz, r) in self.holes:
             draw_disk(hx, 0.01, hz, r, segments=24)
-
 
         # muri
         glColor3f(0.20, 0.20, 0.20)
@@ -303,7 +292,6 @@ def draw_sphere(radius, slices=18, stacks=18):
     gluSphere(quad, radius, slices, stacks)
     gluDeleteQuadric(quad)
 
-
 def draw_disk(cx, cy, cz, r, segments=24):
     glBegin(GL_TRIANGLE_FAN)
     glVertex3f(cx, cy, cz)
@@ -311,7 +299,6 @@ def draw_disk(cx, cy, cz, r, segments=24):
         a = (i / segments) * 2.0 * math.pi
         glVertex3f(cx + math.cos(a) * r, cy, cz + math.sin(a) * r)
     glEnd()
-
 
 def init_opengl():
     glEnable(GL_DEPTH_TEST)
@@ -333,12 +320,8 @@ def setup_fixed_camera_handheld():
               center_x, center_y, center_z,
               up_x, up_y, up_z)
 
-
 # ---------------------------------------------------
-# UI 2D OVERLAY (Pygame sopra OpenGL)
-# ---------------------------------------------------
-# ---------------------------------------------------
-# UI 2D HUD (OPENGL SAFE)
+# UI 2D HUD 
 # ---------------------------------------------------
 def draw_text_gl(x, y, text, font, color=(10, 10, 10)):
     text_surface = font.render(text, True, color)
@@ -364,7 +347,6 @@ def draw_hud_gl(font, level, max_level, lives, state):
     elif state == "WIN":
         y += line_h
         draw_text_gl(20, y, "YOU WIN! (R to restart)", font, (0, 120, 0))
-
 
 
 class AccelController:
@@ -464,10 +446,13 @@ class AccelController:
         ay = y - self.oy
         az = z - self.oz
 
-        # roll  ~ inclinazione sx/dx (usa asse X rispetto a Z)
-        roll  = math.degrees(math.atan2(ax, az if abs(az) > 1e-6 else 1e-6))
-        # pitch ~ inclinazione avanti/indietro (usa asse Y rispetto a Z)
-        pitch = math.degrees(math.atan2(ay, az if abs(az) > 1e-6 else 1e-6))
+        # ---- Rotazione 180° attorno all'asse X ----
+        ax_r =  ax
+        ay_r = -ay
+        az_r = -az
+
+        roll  = math.degrees(math.atan2(ax_r, az_r if abs(az_r) > 1e-6 else 1e-6))
+        pitch = math.degrees(math.atan2(ay_r, az_r if abs(az_r) > 1e-6 else 1e-6))
 
         # Target tilt
         target_tilt_x = pitch
@@ -493,6 +478,22 @@ class AccelController:
 # MAIN
 # ---------------------------------------------------
 def main():
+    
+    parser = argparse.ArgumentParser(description="Labirinto 3D multimodale")
+    parser.add_argument("--audio", action="store_true", help="Abilita audio OSC")
+    parser.add_argument("--vibration", action="store_true", help="Abilita vibrazioni ERM")
+    args = parser.parse_args()
+
+    ENABLE_AUDIO = args.audio
+    ENABLE_VIBRATION = args.vibration
+
+    if ENABLE_AUDIO:
+        bouncing = SimpleUDPClient("127.0.0.1", 9000)
+        boom = SimpleUDPClient("127.0.0.1", 9001)
+        rolling = SimpleUDPClient("127.0.0.1", 9002)
+    else:
+        bouncing = boom = rolling = None
+
     pygame.init()
     ###
     font = pygame.font.SysFont("Arial", 20, bold=True)
@@ -505,10 +506,6 @@ def main():
 
     lives = START_LIVES
     state = "PLAY"   # PLAY, WIN, GAME_OVER
-
-    ##
-
-
 
     screen = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT), DOUBLEBUF | OPENGL)
     pygame.display.set_caption("Labirinto 3D – vite, buchi, traguardo")
@@ -539,12 +536,6 @@ def main():
         accel.tilt_z_deg = 0.0
         return 0.0, 0.0   
 
-    def load_level(level):
-        nonlocal maze, ball
-        maze = Maze(level=level)
-        ball.reset()
-        reset_tilt(accel) 
-
     while running:
         dt = clock.tick(FPS) / 1000.0
 
@@ -563,12 +554,9 @@ def main():
             reset_tilt(accel)
             state = "PLAY"
 
-
         # Reset soft (SPACE) solo durante gioco
         if keys[K_SPACE] and state == "PLAY":
             ball.reset()
-            
-
             reset_tilt(accel)
 
         if state == "PLAY":
@@ -592,22 +580,26 @@ def main():
             if speed > ROLL_ON_THRESHOLD:
                 # accendi rolling se era spento
                 if not rolling_on:
-                    rolling.send_message("/rolling/on", 1)
+                    if ENABLE_AUDIO:
+                        rolling.send_message("/rolling/on", 1)
                     rolling_on = True
 
                 # mappa velocità fisica -> velocity sonora
                 rolling_velocity = min((speed / MAX_ROLL_SPEED) * 5.0, 5.0)
 
-                rolling.send_message("/rolling/velocity", rolling_velocity)
+                if ENABLE_AUDIO:
+                    rolling.send_message("/rolling/velocity", rolling_velocity)
 
             else:
                 # spegni rolling se la pallina è ferma
                 if rolling_on:
-                    rolling.send_message("/rolling/on", 0)
+                    if ENABLE_AUDIO:                        
+                        rolling.send_message("/rolling/on", 0)
                     rolling_on = False
 
-            if hit_wall:
+            if hit_wall and ENABLE_AUDIO:
                 bouncing.send_message("/bouncing", 1)
+            if hit_wall and ENABLE_VIBRATION:
                 accel.vibra()
 
             # ---------------------------------------------------
@@ -637,36 +629,39 @@ def main():
 
             # invio comando al teensy
             if inside_area:
-                accel.ser.write(f"H:{hole_vibration}\n".encode())
+                if ENABLE_VIBRATION:
+                    accel.ser.write(f"H:{hole_vibration}\n".encode())
             else:
-                accel.ser.write(b"H:0\n")
-
-
+                if ENABLE_VIBRATION:
+                    accel.ser.write(b"H:0\n")
 
             # caduta nei buchi
             fell = False
             for (hx, hz, r) in maze.holes:
                 if math.hypot(ball.x - hx, ball.z - hz) < (r - BALL_RADIUS * 0.25):
                     fell = True
-                    boom.send_message("/boom", 1)
+                    if ENABLE_AUDIO:
+                        boom.send_message("/boom", 1)
                     break
 
             if fell:
                 lives -= 1
-                boom.send_message("/boom", 1)
+                if ENABLE_AUDIO:
+                    boom.send_message("/boom", 1)
                 if lives <= 0:
                     state = "GAME_OVER"                    
-                    rolling.send_message("/rolling/on", 0)
+                    if ENABLE_AUDIO:
+                        rolling.send_message("/rolling/on", 0)
                     rolling_on = False
                 else:
                     ball.reset()                   
-                    reset_tilt(accel)
-                    
+                    reset_tilt(accel)                    
 
             # vittoria
             if point_in_rect(ball.x, ball.z, GOAL_RECT):
-                boom.send_message("/boom", 1)
-                rolling.send_message("/rolling/on", 0)
+                if ENABLE_AUDIO:
+                    boom.send_message("/boom", 1)
+                    rolling.send_message("/rolling/on", 0)
                 rolling_on = False
 
                 if current_level < max_level:
@@ -677,8 +672,6 @@ def main():
                     state = "PLAY"
                 else:
                     state = "WIN"
-
-
 
         # -------- RENDER 3D --------
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -712,12 +705,14 @@ def main():
 
         pygame.display.flip()
 
-
-
+    if ENABLE_AUDIO:
+        rolling.send_message("/rolling/on", 0)
+    if ENABLE_VIBRATION:
+        accel.ser.write(b"H:0\n")
 
     accel.close()
     pygame.quit()
-    
+
 
 if __name__ == "__main__":
     main()
