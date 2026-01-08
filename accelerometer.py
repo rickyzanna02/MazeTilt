@@ -80,7 +80,7 @@ class AccelController:
         if xyz is None:
             return (self.tilt_x_deg, self.tilt_z_deg)
 
-        x, y, z = xyz
+        x, y, z = xyz       # qua stampa come serial monitor (x,y,z) -> (507,502,629)
 
         # ---- Calibrazione offset iniziale (tenere il sensore fermo) ----
         if not self.calibrated:
@@ -93,30 +93,22 @@ class AccelController:
                 self.oy = self._sumy / self._calib_count
                 self.oz = self._sumz / self._calib_count
                 self.calibrated = True
+                # print(f"Calibrated offsets: ox={self.ox:.2f}, oy={self.oy:.2f}, oz={self.oz:.2f}")
             return (self.tilt_x_deg, self.tilt_z_deg)
-
-       # ---- Rimuovi offset ----
+        
+        # ---- Rimuovi offset ----
         ax = x - self.ox
         ay = y - self.oy
-        az = z - self.oz
+        az = z
 
-        # ---- Rotazione 90° CLOCKWISE attorno a Z ----
-        ax_z =  ay
-        ay_z = -ax
-        az_z =  az
+        roll_deg  = math.degrees(math.atan2(ax, math.sqrt(ay*ay + az*az)))
+        pitch_deg = math.degrees(math.atan2(ay, math.sqrt(ax*ax + az*az)))
 
-        # ---- Rotazione 180° attorno all'asse X (come prima) ----
-        ax_r =  ax_z
-        ay_r = -ay_z
-        az_r = -az_z
-
-
-        roll  = math.degrees(math.atan2(ax_r, az_r if abs(az_r) > 1e-6 else 1e-6))
-        pitch = math.degrees(math.atan2(ay_r, az_r if abs(az_r) > 1e-6 else 1e-6))
+        # print(f"Raw XYZ: ({x}, {y}, {z}) -> Roll_deg: {roll_deg:.2f}, Pitch_deg: {pitch_deg:.2f}")
 
         # Target tilt
-        target_tilt_x = pitch
-        target_tilt_z = roll
+        target_tilt_x = -pitch_deg
+        target_tilt_z = roll_deg
 
         # Deadzone per non tremare quando "quasi fermo"
         if abs(target_tilt_x) < self.deadzone_deg:
