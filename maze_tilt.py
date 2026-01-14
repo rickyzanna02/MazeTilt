@@ -5,10 +5,13 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from pythonosc.udp_client import SimpleUDPClient
 import argparse
+import csv
+import os
 from levels import LEVELS
 from ball import Ball
 from maze import Maze
 from accelerometer import AccelController
+
 
 MAX_ROLL_SPEED = 8.0   
 ROLL_ON_THRESHOLD = 0.05
@@ -93,6 +96,35 @@ def draw_hud_gl(font, level, max_level, lives, state, time_sec, wall_hits):
         draw_text_gl(20, y, "YOU WIN! (R to restart)", font, (0, 120, 0))
 
 
+def save_results(name, attempt, result, time_sec, wall_hits, lives):
+    os.makedirs("results", exist_ok=True)
+    filename = os.path.join("results", "results.csv")
+    file_exists = os.path.isfile(filename)
+
+    with open(filename, mode="a", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+
+        if not file_exists:
+            writer.writerow([
+                "Nome",
+                "Tentativo",
+                "Esito",
+                "Tempo_totale_sec",
+                "Collisioni_muri",
+                "Vite_rimanenti"
+            ])
+
+        writer.writerow([
+            name,
+            attempt,
+            result,
+            f"{time_sec:.2f}",
+            wall_hits,
+            lives
+        ])
+
+
+
 # ---------------------------------------------------
 # MAIN
 # ---------------------------------------------------
@@ -124,7 +156,10 @@ def main():
     start_time = None
     total_time = 0.0
     wall_collisions = 0
-    state = "PLAY"   # PLAY, WIN, GAME_OVER
+    player_name = ""
+    attempt_number = ""
+    input_field = "name"   # "name" | "attempt"
+    state = "INPUT"   # INPUT, PLAY, WIN, GAME_OVER
     screen = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT), DOUBLEBUF | OPENGL)
     pygame.display.set_caption("Labirinto 3D – vite, buchi, traguardo")
     clock = pygame.time.Clock()
@@ -137,8 +172,8 @@ def main():
     maze = Maze(level=1)
     ball = Ball(*START_POS)
     lives = START_LIVES
-    state = "PLAY"  # PLAY, WIN, GAME_OVER
-    start_time = pygame.time.get_ticks()
+    
+
     tilt_x_deg = 0.0
     tilt_z_deg = 0.0
     running = True
@@ -156,6 +191,27 @@ def main():
             if event.type == QUIT:
                 running = False
 
+            if state == "INPUT" and event.type == KEYDOWN:
+                if event.key == K_RETURN:
+                    if input_field == "name":
+                        if player_name.strip() != "":
+                            input_field = "attempt"
+                    elif input_field == "attempt":
+                        if attempt_number != "":
+                            state = "PLAY"
+                            start_time = pygame.time.get_ticks()
+
+                elif event.key == K_BACKSPACE:
+                    if input_field == "name":
+                        player_name = player_name[:-1]
+                    else:
+                        attempt_number = attempt_number[:-1]
+                else:
+                    if input_field == "name" and event.unicode.isprintable():
+                        player_name += event.unicode
+                    elif input_field == "attempt" and event.unicode.isdigit():
+                        attempt_number += event.unicode
+
         keys = pygame.key.get_pressed()
 
         # Restart dopo win/gameover con R
@@ -169,6 +225,10 @@ def main():
             wall_collisions = 0
             total_time = 0.0
             start_time = pygame.time.get_ticks()
+            player_name = ""
+            attempt_number = ""
+            input_field = "name"
+            state = "INPUT"
 
         # Reset soft (SPACE) solo durante gioco
         if keys[K_SPACE] and state == "PLAY":
@@ -269,7 +329,9 @@ def main():
                 if ENABLE_AUDIO:
                     boom.send_message("/boom", 1)
                 if lives <= 0:
-                    state = "GAME_OVER"                    
+                    state = "GAME_OVER" 
+                    save_results(player_name, attempt_number, "GAME_OVER", total_time, wall_collisions, lives)    
+
                     if ENABLE_AUDIO:
                         rolling.send_message("/rolling/on", 0)
                     rolling_on = False
@@ -292,6 +354,7 @@ def main():
                     state = "PLAY"
                 else:
                     state = "WIN"
+                    save_results(player_name, attempt_number, "WIN", total_time, wall_collisions, lives) 
 
         # -------- RENDER 3D --------
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -317,6 +380,14 @@ def main():
 
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+
+        if state == "INPUT":
+            draw_text_gl(300, 240, "Inserisci nome:", font)
+            draw_text_gl(300, 270, player_name + "|", font)
+
+            draw_text_gl(300, 320, "Numero tentativo:", font)
+            cursor = "|" if input_field == "attempt" else ""
+            draw_text_gl(300, 350, attempt_number + cursor, font)
 
         draw_hud_gl(font, current_level, max_level, lives, state, total_time, wall_collisions)
 
