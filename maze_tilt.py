@@ -12,13 +12,14 @@ from accelerometer import AccelController
 
 MAX_ROLL_SPEED = 8.0   
 ROLL_ON_THRESHOLD = 0.05
+COLLISION_SPEED_THRESHOLD = 0.15
 WIN_WIDTH, WIN_HEIGHT = 1000, 700
 FPS = 60
 MAZE_WIDTH = 20.0
 MAZE_DEPTH = 30.0
 BALL_RADIUS = 0.6
 GRAVITY = 15.0
-FRICTION = 0.995
+FRICTION = 0.9985
 MAX_TILT_DEG = 18.0
 START_POS = (0.0, -(MAZE_DEPTH / 2.0) + 3.0)  # (x, z)
 START_LIVES = 3
@@ -71,13 +72,17 @@ def draw_text_gl(x, y, text, font, color=(10, 10, 10)):
     glDrawPixels(width, height, GL_RGBA, GL_UNSIGNED_BYTE, text_data)
 
 
-def draw_hud_gl(font, level, max_level, lives, state):
+def draw_hud_gl(font, level, max_level, lives, state, time_sec, wall_hits):
     y = 20
     line_h = 24
 
     draw_text_gl(20, y, f"Level: {level} / {max_level}", font)
     y += line_h
     draw_text_gl(20, y, f"Lives: {lives}", font)
+    y += line_h
+    draw_text_gl(20, y, f"Time: {time_sec:.1f} s", font)
+    y += line_h
+    draw_text_gl(20, y, f"Wall collisions: {wall_hits}", font)
     y += line_h
 
     if state == "GAME_OVER":
@@ -92,7 +97,7 @@ def draw_hud_gl(font, level, max_level, lives, state):
 # MAIN
 # ---------------------------------------------------
 def main():
-    
+       
     parser = argparse.ArgumentParser(description="Labirinto 3D multimodale")
     parser.add_argument("--audio", action="store_true", help="Abilita audio OSC")
     parser.add_argument("--vibration", action="store_true", help="Abilita vibrazioni ERM")
@@ -100,6 +105,7 @@ def main():
 
     ENABLE_AUDIO = args.audio
     ENABLE_VIBRATION = args.vibration
+
 
     if ENABLE_AUDIO:
         bouncing = SimpleUDPClient("127.0.0.1", 9000)
@@ -115,6 +121,9 @@ def main():
     maze = Maze(level=current_level)
     ball = Ball(*START_POS)
     lives = START_LIVES
+    start_time = None
+    total_time = 0.0
+    wall_collisions = 0
     state = "PLAY"   # PLAY, WIN, GAME_OVER
     screen = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT), DOUBLEBUF | OPENGL)
     pygame.display.set_caption("Labirinto 3D – vite, buchi, traguardo")
@@ -129,6 +138,7 @@ def main():
     ball = Ball(*START_POS)
     lives = START_LIVES
     state = "PLAY"  # PLAY, WIN, GAME_OVER
+    start_time = pygame.time.get_ticks()
     tilt_x_deg = 0.0
     tilt_z_deg = 0.0
     running = True
@@ -156,13 +166,17 @@ def main():
             ball.reset()
             reset_tilt(accel)
             state = "PLAY"
+            wall_collisions = 0
+            total_time = 0.0
+            start_time = pygame.time.get_ticks()
 
         # Reset soft (SPACE) solo durante gioco
         if keys[K_SPACE] and state == "PLAY":
             ball.reset()
             reset_tilt(accel)
 
-        if state == "PLAY":
+        if state == "PLAY" and start_time is not None:
+            total_time = (pygame.time.get_ticks() - start_time) / 1000.0
             # --- INPUT DA ACCELEROMETRO ---
             tilt_x_deg, tilt_z_deg = accel.update()
 
@@ -171,7 +185,10 @@ def main():
 
             # fisica + collisioni
             ball.update(dt, tilt_x_deg, tilt_z_deg)
+            speed = math.hypot(ball.vx, ball.vz)
             hit_wall = maze.handle_collisions(ball)
+            if hit_wall and speed > COLLISION_SPEED_THRESHOLD:
+                wall_collisions += 1
 
             # ---------------------------------------------------
             # ROLLING SOUND (ON/OFF + VELOCITY)
@@ -301,7 +318,7 @@ def main():
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
-        draw_hud_gl(font, current_level, max_level, lives, state)
+        draw_hud_gl(font, current_level, max_level, lives, state, total_time, wall_collisions)
 
         glDisable(GL_BLEND)
         glEnable(GL_DEPTH_TEST)
