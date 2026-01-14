@@ -158,7 +158,7 @@ def draw_hud_gl(font, level, max_level, lives, state, time_sec, wall_hits):
         draw_text_gl(20, y, "YOU WIN! (R to restart)", font, (0, 120, 0))
 
 
-def save_results(name, attempt, result, time_sec, wall_hits, lives):
+def save_results(name, modalita, attempt, result, time_sec, wall_hits, lives):
     os.makedirs("results", exist_ok=True)
     filename = os.path.join("results", "results.csv")
     file_exists = os.path.isfile(filename)
@@ -169,6 +169,7 @@ def save_results(name, attempt, result, time_sec, wall_hits, lives):
         if not file_exists:
             writer.writerow([
                 "Nome",
+                "Modalità",
                 "Tentativo",
                 "Esito",
                 "Tempo_totale_sec",
@@ -178,6 +179,7 @@ def save_results(name, attempt, result, time_sec, wall_hits, lives):
 
         writer.writerow([
             name,
+            modalita,
             attempt,
             result,
             f"{time_sec:.2f}",
@@ -196,6 +198,12 @@ def main():
     parser.add_argument("--audio", action="store_true", help="Abilita audio OSC")
     parser.add_argument("--vibration", action="store_true", help="Abilita vibrazioni ERM")
     args = parser.parse_args()
+    modalita=0
+    if args.audio and args.vibration:
+        modalita=2
+    elif args.audio:
+        modalita=1
+    
 
     ENABLE_AUDIO = args.audio
     ENABLE_VIBRATION = args.vibration
@@ -205,8 +213,9 @@ def main():
         bouncing = SimpleUDPClient("127.0.0.1", 9000)
         boom = SimpleUDPClient("127.0.0.1", 9001)
         rolling = SimpleUDPClient("127.0.0.1", 9002)
+        win=SimpleUDPClient("127.0.0.1",9003)
     else:
-        bouncing = boom = rolling = None
+        bouncing = boom = rolling = win = None
 
     pygame.init()
     font = pygame.font.SysFont("Arial", 20, bold=True)
@@ -419,8 +428,9 @@ def main():
                     boom.send_message("/boom", 1)
                 if lives <= 0:
                     state = "GAME_OVER" 
-                    save_results(player_name, attempt_number, "GAME_OVER", total_time, wall_collisions, lives)    
-
+                    save_results(player_name, modalita, attempt_number, "GAME_OVER", total_time, wall_collisions, lives)    
+                    if ENABLE_VIBRATION:
+                        accel.ser.write(b"H:0\n")
                     if ENABLE_AUDIO:
                         rolling.send_message("/rolling/on", 0)
                     rolling_on = False
@@ -431,7 +441,7 @@ def main():
             # vittoria
             if point_in_rect(ball.x, ball.z, GOAL_RECT):
                 if ENABLE_AUDIO:
-                    boom.send_message("/boom", 1)
+                    win.send_message("/win", 1)
                     rolling.send_message("/rolling/on", 0)
                 rolling_on = False
 
