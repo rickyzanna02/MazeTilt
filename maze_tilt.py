@@ -13,7 +13,7 @@ from maze import Maze
 from accelerometer import AccelController
 
 
-MAX_ROLL_SPEED = 8.0   
+MAX_ROLL_SPEED = 16.0 
 ROLL_ON_THRESHOLD = 0.05
 COLLISION_SPEED_THRESHOLD = 0.15
 WIN_WIDTH, WIN_HEIGHT = 1000, 700
@@ -21,14 +21,76 @@ FPS = 60
 MAZE_WIDTH = 20.0
 MAZE_DEPTH = 30.0
 BALL_RADIUS = 0.6
-GRAVITY = 15.0
-FRICTION = 0.9985
-MAX_TILT_DEG = 18.0
+GRAVITY = 50
+FRICTION = 0.99
+MAX_TILT_DEG = 18
 START_POS = (0.0, -(MAZE_DEPTH / 2.0) + 3.0)  # (x, z)
 START_LIVES = 3
 HOLE_VIBRATION_MAX = 220   # PWM max
 HOLE_VIBRATION_MIN = 40    # min vibration
 GOAL_RECT = (MAZE_WIDTH / 2.0 - 3.0, MAZE_DEPTH / 2.0 - 3.5, 2.2, 2.2)# Goal: rect in XZ plane (x, z, w, d)
+
+
+UI_BG_ALPHA = 160
+PANEL_W, PANEL_H = 420, 320
+PANEL_X = (WIN_WIDTH - PANEL_W) // 2
+PANEL_Y = (WIN_HEIGHT - PANEL_H) // 2
+
+INPUT_W, INPUT_H = 300, 32
+INPUT_X = PANEL_X + 60
+NAME_Y = PANEL_Y + 80
+ATTEMPT_Y = PANEL_Y + 130
+
+BUTTON_W, BUTTON_H = 140, 36
+BUTTON_X = PANEL_X + (PANEL_W - BUTTON_W) // 2
+BUTTON_Y = PANEL_Y + 260
+LABEL_TO_INPUT_GAP = 30
+FIELD_GAP = 80   # distanza tra Nome e Tentativo (label → label)
+
+NAME_LABEL_Y = PANEL_Y + 60
+NAME_INPUT_Y = NAME_LABEL_Y + LABEL_TO_INPUT_GAP
+
+ATT_LABEL_Y = NAME_LABEL_Y + FIELD_GAP
+ATT_INPUT_Y = ATT_LABEL_Y + LABEL_TO_INPUT_GAP
+
+def draw_input_panel(font, player_name, attempt, active_field):
+    # sfondo scuro
+    overlay = pygame.Surface((WIN_WIDTH, WIN_HEIGHT), pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, UI_BG_ALPHA))
+    data = pygame.image.tostring(overlay, "RGBA", True)
+    glDrawPixels(WIN_WIDTH, WIN_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, data)
+
+    # pannello centrale
+    panel = pygame.Surface((PANEL_W, PANEL_H))
+    panel.fill((240, 240, 240))
+    pygame.draw.rect(panel, (50, 50, 50), panel.get_rect(), 2)
+
+    # testi
+    panel.blit(font.render("Inserisci dati", True, (0, 0, 0)), (120, 20))
+    panel.blit(font.render("Nome:", True, (0, 0, 0)), (40, NAME_LABEL_Y - PANEL_Y))
+    panel.blit(font.render("Tentativo:", True, (0, 0, 0)), (40, ATT_LABEL_Y - PANEL_Y))
+
+    # input box
+    name_color = (0, 120, 255) if active_field == "name" else (0, 0, 0)
+    att_color = (0, 120, 255) if active_field == "attempt" else (0, 0, 0)
+
+    pygame.draw.rect(panel, name_color, (60, NAME_INPUT_Y - PANEL_Y, INPUT_W, INPUT_H), 2)
+    pygame.draw.rect(panel, att_color, (60, ATT_INPUT_Y - PANEL_Y, INPUT_W, INPUT_H), 2)
+
+    panel.blit(font.render(player_name, True, (0, 0, 0)), (65, NAME_INPUT_Y - PANEL_Y + 5))
+    panel.blit(font.render(attempt, True, (0, 0, 0)), (65, ATT_INPUT_Y - PANEL_Y + 5))
+
+    # bottone
+    pygame.draw.rect(panel, (0, 200, 0), (BUTTON_X - PANEL_X, BUTTON_Y - PANEL_Y, BUTTON_W, BUTTON_H))
+    panel.blit(font.render("START", True, (255, 255, 255)),
+               (BUTTON_X - PANEL_X + 35, BUTTON_Y - PANEL_Y + 7))
+
+    # draw panel
+    panel_data = pygame.image.tostring(panel, "RGBA", True)
+    glWindowPos2d(PANEL_X, WIN_HEIGHT - PANEL_Y - PANEL_H)
+    glDrawPixels(PANEL_W, PANEL_H, GL_RGBA, GL_UNSIGNED_BYTE, panel_data)
+
+
 
 # ---------------------------------------------------
 # UTILS
@@ -151,7 +213,7 @@ def main():
     current_level = 1
     max_level = max(LEVELS.keys())
     maze = Maze(level=current_level)
-    ball = Ball(*START_POS)
+    ball = Ball(*START_POS, gravity=GRAVITY, friction=FRICTION)
     lives = START_LIVES
     start_time = None
     total_time = 0.0
@@ -165,14 +227,7 @@ def main():
     clock = pygame.time.Clock()
     accel = AccelController(port="COM4", baud=115200, timeout=0.0)
 
-    init_opengl()
-
-    current_level = 1
-    max_level = max(LEVELS.keys())
-    maze = Maze(level=1)
-    ball = Ball(*START_POS)
-    lives = START_LIVES
-    
+    init_opengl()   
 
     tilt_x_deg = 0.0
     tilt_z_deg = 0.0
@@ -191,26 +246,60 @@ def main():
             if event.type == QUIT:
                 running = False
 
+            # -------- INPUT TASTIERA --------
             if state == "INPUT" and event.type == KEYDOWN:
-                if event.key == K_RETURN:
+
+                # ---------- TAB: cambia focus SEMPRE ----------
+                if event.key == K_TAB:
+                    input_field = "attempt" if input_field == "name" else "name"
+
+                # ---------- ENTER ----------
+                elif event.key == K_RETURN:
                     if input_field == "name":
-                        if player_name.strip() != "":
-                            input_field = "attempt"
+                        # ENTER su nome → vai a tentativo
+                        input_field = "attempt"
+
                     elif input_field == "attempt":
-                        if attempt_number != "":
+                        # ENTER su tentativo → prova a partire
+                        if player_name.strip() != "" and attempt_number != "":
                             state = "PLAY"
                             start_time = pygame.time.get_ticks()
 
+                # ---------- BACKSPACE ----------
                 elif event.key == K_BACKSPACE:
                     if input_field == "name":
                         player_name = player_name[:-1]
                     else:
                         attempt_number = attempt_number[:-1]
+
+                # ---------- INPUT CARATTERI ----------
                 else:
                     if input_field == "name" and event.unicode.isprintable():
                         player_name += event.unicode
+
                     elif input_field == "attempt" and event.unicode.isdigit():
                         attempt_number += event.unicode
+
+
+            # -------- INPUT MOUSE --------
+            if state == "INPUT" and event.type == MOUSEBUTTONDOWN:
+                mx, my = event.pos
+
+                # click su campo nome
+                if INPUT_X <= mx <= INPUT_X + INPUT_W and NAME_INPUT_Y <= my <= NAME_INPUT_Y + INPUT_H:
+                    input_field = "name"
+
+                # click su campo tentativo
+                elif INPUT_X <= mx <= INPUT_X + INPUT_W and ATT_INPUT_Y <= my <= ATT_INPUT_Y + INPUT_H:
+                    input_field = "attempt"
+
+                # click su bottone START
+                elif (BUTTON_X <= mx <= BUTTON_X + BUTTON_W and
+                    BUTTON_Y <= my <= BUTTON_Y + BUTTON_H):
+                    if player_name.strip() != "" and attempt_number != "":
+                        state = "PLAY"
+                        start_time = pygame.time.get_ticks()
+
 
         keys = pygame.key.get_pressed()
 
@@ -382,12 +471,7 @@ def main():
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
         if state == "INPUT":
-            draw_text_gl(300, 240, "Inserisci nome:", font)
-            draw_text_gl(300, 270, player_name + "|", font)
-
-            draw_text_gl(300, 320, "Numero tentativo:", font)
-            cursor = "|" if input_field == "attempt" else ""
-            draw_text_gl(300, 350, attempt_number + cursor, font)
+            draw_input_panel(font, player_name, attempt_number, input_field)
 
         draw_hud_gl(font, current_level, max_level, lives, state, total_time, wall_collisions)
 
