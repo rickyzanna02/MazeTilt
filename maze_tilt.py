@@ -232,7 +232,7 @@ def main():
     input_field = "name"   # "name" | "attempt"
     state = "INPUT"   # INPUT, PLAY, WIN, GAME_OVER
     screen = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT), DOUBLEBUF | OPENGL)
-    pygame.display.set_caption("Labirinto 3D – vite, buchi, traguardo")
+    pygame.display.set_caption("MazeTilt")
     clock = pygame.time.Clock()
     accel = AccelController(port="COM4", baud=115200, timeout=0.0)
 

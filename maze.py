@@ -11,7 +11,7 @@ from ball import Ball
 
 MAZE_WIDTH = 20.0
 MAZE_DEPTH = 30.0
-GOAL_RECT = (MAZE_WIDTH / 2.0 - 3.0, MAZE_DEPTH / 2.0 - 3.5, 2.2, 2.2)# Goal: rect in XZ plane (x, z, w, d)
+GOAL_RECT = (MAZE_WIDTH / 2.0 - 3.0, MAZE_DEPTH / 2.0 - 3.0, 2.2, 2.2)# Goal: rect in XZ plane (x, z, w, d)
 WALL_RESTITUTION = 0.80
 WALL_TANGENTIAL = 0.96
 BALL_RADIUS = 0.6
@@ -105,16 +105,16 @@ class Maze:
         gx, gz, gw, gd = GOAL_RECT
         glColor3f(0.2, 0.8, 0.2)
         glBegin(GL_QUADS)
-        glVertex3f(gx, 0.01, gz)
-        glVertex3f(gx + gw, 0.01, gz)
-        glVertex3f(gx + gw, 0.01, gz + gd)
-        glVertex3f(gx, 0.01, gz + gd)
+        glVertex3f(gx, 0.25, gz)
+        glVertex3f(gx + gw, 0.25, gz)
+        glVertex3f(gx + gw, 0.25, gz + gd)
+        glVertex3f(gx, 0.25, gz + gd)
         glEnd()
 
         # buchi (dischi scuri)
         glColor3f(0.12, 0.12, 0.12)
         for (hx, hz, r) in self.holes:
-            draw_disk(hx, 0.01, hz, r, segments=24)
+            draw_disk(hx, 0.25, hz, r, segments=24)
 
         # muri
         glColor3f(0.20, 0.20, 0.20)
