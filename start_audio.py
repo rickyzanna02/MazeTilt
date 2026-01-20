@@ -4,15 +4,29 @@ import platform
 
 
 def start_pd():
-    PATCHES = [
-        "rolling.pd",
-        "bouncing.pd",
-        "boom.pd",
-        "win.pd"
+    # ======================
+    # CONFIGURAZIONE PATCH
+    # ======================
+
+    PATCH_GROUPS = [
+        {
+            "dir": "PureDataAudio",
+            "patches": [
+                "rolling.pd",
+                "bouncing.pd",
+                "boom.pd",
+                "win.pd",
+            ]
+        },
+        {
+            "dir": "Pd_serial_communication_send_receive", 
+            "patches": [
+                "Main_Pd_serial_communication_send_receive.pd",                 
+            ]
+        }
     ]
 
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    PATCH_DIR = os.path.join(BASE_DIR, "PureDataAudio")
 
     system = platform.system()
 
@@ -26,16 +40,24 @@ def start_pd():
 
     cmd = PD_CMD[:]
 
-    for patch in PATCHES:
-        patch_path = os.path.join(PATCH_DIR, patch)
-        if not os.path.isfile(patch_path):
-            raise FileNotFoundError(f"Patch non trovata: {patch_path}")
-        cmd.extend(["-open", patch_path])
+    # ======================
+    # CARICAMENTO PATCH
+    # ======================
+    for group in PATCH_GROUPS:
+        patch_dir = os.path.join(BASE_DIR, group["dir"])
+
+        for patch in group["patches"]:
+            patch_path = os.path.join(patch_dir, patch)
+            if not os.path.isfile(patch_path):
+                raise FileNotFoundError(f"Patch non trovata: {patch_path}")
+            cmd.extend(["-open", patch_path])
 
     # DSP ON
     cmd.extend(["-send", "pd dsp 1"])
 
-    # Avvio in background
+    # ======================
+    # AVVIO IN BACKGROUND
+    # ======================
     return subprocess.Popen(
         cmd,
         stdout=subprocess.DEVNULL,
@@ -43,7 +65,7 @@ def start_pd():
     )
 
 
-#  ENTRY POINT
+# ENTRY POINT
 if __name__ == "__main__":
     print("Avvio Pure Data...")
     start_pd()
