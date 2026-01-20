@@ -245,6 +245,11 @@ def main():
     ENABLE_AUDIO = args.audio
     ENABLE_VIBRATION = args.vibration
 
+    if ENABLE_VIBRATION:
+        vibration = SimpleUDPClient("127.0.0.1", 2222)
+    else:
+        vibration = None
+    
 
     if ENABLE_AUDIO:
         bouncing = SimpleUDPClient("127.0.0.1", 9000)
@@ -271,7 +276,7 @@ def main():
     screen = pygame.display.set_mode((WIN_WIDTH, WIN_HEIGHT), DOUBLEBUF | OPENGL)
     pygame.display.set_caption("MazeTilt")
     clock = pygame.time.Clock()
-    accel = AccelController(port="COM4", baud=115200, timeout=0.0)
+    accel = AccelController()
 
     init_opengl()   
 
@@ -420,7 +425,7 @@ def main():
             if hit_wall and ENABLE_AUDIO:
                 bouncing.send_message("/bouncing", 1)
             if hit_wall and ENABLE_VIBRATION:
-                accel.vibra()
+                vibration.send_message("/V", 1)
 
             # ---------------------------------------------------
             # HOLE AREA → VIBRAZIONE CONTINUA PROPORZIONALE
@@ -450,10 +455,10 @@ def main():
             # invio comando al teensy
             if inside_area:
                 if ENABLE_VIBRATION:
-                    accel.ser.write(f"H:{hole_vibration}\n".encode())
+                    vibration.send_message("/H", hole_vibration)
             else:
                 if ENABLE_VIBRATION:
-                    accel.ser.write(b"H:0\n")
+                    vibration.send_message("/H", 0)
 
             # caduta nei buchi
             fell = False
@@ -472,7 +477,7 @@ def main():
                     state = "GAME_OVER" 
                     save_results(player_name, modalita, attempt_number, "GAME_OVER", total_time, wall_collisions, lives)    
                     if ENABLE_VIBRATION:
-                        accel.ser.write(b"H:0\n")
+                        vibration.send_message("/H", 0)
                     if ENABLE_AUDIO:
                         rolling.send_message("/rolling/on", 0)
                     rolling_on = False
@@ -539,7 +544,7 @@ def main():
     if ENABLE_AUDIO:
         rolling.send_message("/rolling/on", 0)
     if ENABLE_VIBRATION:
-        accel.ser.write(b"H:0\n")
+        vibration.send_message("/H", 0)
 
     accel.close()
     pygame.quit()

@@ -1,20 +1,46 @@
 import time
-import serial
 import math
+import threading
+from pythonosc.dispatcher import Dispatcher
+from pythonosc.osc_server import ThreadingOSCUDPServer
 
 
 class AccelController:
     """
-    Legge x,y,z da seriale e li converte in tilt_x_deg / tilt_z_deg.
-    - Calibra offset iniziale (board ferma) per azzerare.
-    - Usa atan2 per ricavare pitch/roll.
-    - Applica smoothing e deadzone.
+    Legge x,y,z via OSC (Pure Data) e li converte in tilt_x_deg / tilt_z_deg.
+    Mantiene invariata la logica di calibrazione e update().
     """
-    def __init__(self, port="COM4", baud=115200, timeout=0.0,
-                 calib_samples=60, smooth=0.20, deadzone_deg=0.6):
-        self.ser = serial.Serial(port, baud, timeout=timeout)
-        time.sleep(2)  # reset USB/seriale
+    def __init__(self,
+                 osc_ip="127.0.0.1",
+                 osc_port=4444,
+                 calib_samples=60,
+                 smooth=0.20,
+                 deadzone_deg=0.6):
 
+        # ---- OSC state ----
+        self._osc_x = None
+        self._osc_y = None
+        self._osc_z = None
+        self._last_xyz = None
+
+        # ---- Setup OSC server ----
+        dispatcher = Dispatcher()
+        dispatcher.map("/a0", self._on_x)
+        dispatcher.map("/a1", self._on_y)
+        dispatcher.map("/a2", self._on_z)
+
+        self.server = ThreadingOSCUDPServer(
+            (osc_ip, osc_port),
+            dispatcher
+        )
+
+        self._osc_thread = threading.Thread(
+            target=self.server.serve_forever,
+            daemon=True
+        )
+        self._osc_thread.start()
+
+        # ---- Calibrazione ----
         self.calib_samples = calib_samples
         self._calib_count = 0
         self._sumx = 0.0
@@ -25,64 +51,59 @@ class AccelController:
         self.oz = 0.0
         self.calibrated = False
 
+        # ---- Filtro ----
         self.smooth = smooth
         self.deadzone_deg = deadzone_deg
 
-        self.tilt_x_deg = 0.0  # pitch (rotazione asse X nel tuo codice)
-        self.tilt_z_deg = 0.0  # roll  (rotazione asse Z nel tuo codice)
+        self.tilt_x_deg = 0.0
+        self.tilt_z_deg = 0.0
 
-        self._last_xyz = None
+    # =========================================================
+    # OSC callbacks
+    # =========================================================
+    def _on_x(self, addr, value):
+        self._osc_x = float(value)
+        self._update_last_xyz()
 
+    def _on_y(self, addr, value):
+        self._osc_y = float(value)
+        self._update_last_xyz()
+
+    def _on_z(self, addr, value):
+        self._osc_z = float(value)
+        self._update_last_xyz()
+
+    def _update_last_xyz(self):
+        if self._osc_x is None or self._osc_y is None or self._osc_z is None:
+            return
+        self._last_xyz = (self._osc_x, self._osc_y, self._osc_z)
+
+    # =========================================================
+    # API identica alla versione seriale
+    # =========================================================
     def close(self):
         try:
-            self.ser.close()
+            self.server.shutdown()
         except Exception:
             pass
 
-    def _parse_line(self, line: str):
-        parts = line.strip().split(",")
-        if len(parts) < 2:
-            return None
-        try:
-            x = int(parts[0])
-            y = int(parts[1])
-            z = int(parts[2]) if len(parts) > 2 else 0
-            return (x, y, z)
-        except ValueError:
-            return None
-
     def read_latest_xyz(self):
         """
-        Non blocca: legge tutte le righe disponibili e tiene l'ultima valida.
+        Non blocca: ritorna l'ultimo valore OSC ricevuto.
         """
-        latest = None
-        while True:
-            raw = self.ser.readline()
-            if not raw:
-                break
-            try:
-                s = raw.decode("utf-8", errors="ignore")
-            except Exception:
-                continue
-            v = self._parse_line(s)
-            if v is not None:
-                latest = v
-        if latest is not None:
-            self._last_xyz = latest
         return self._last_xyz
 
     def update(self):
         """
-        Aggiorna tilt_x_deg / tilt_z_deg.
-        Da chiamare una volta per frame.
+        IDENTICO al tuo codice originale.
         """
         xyz = self.read_latest_xyz()
         if xyz is None:
             return (self.tilt_x_deg, self.tilt_z_deg)
 
-        x, y, z = xyz       # qua stampa come serial monitor (x,y,z) -> (507,502,629)
+        x, y, z = xyz
 
-        # ---- Calibrazione offset iniziale (tenere il sensore fermo) ----
+        # ---- Calibrazione offset iniziale ----
         if not self.calibrated:
             self._sumx += x
             self._sumy += y
@@ -93,9 +114,8 @@ class AccelController:
                 self.oy = self._sumy / self._calib_count
                 self.oz = self._sumz / self._calib_count
                 self.calibrated = True
-                # print(f"Calibrated offsets: ox={self.ox:.2f}, oy={self.oy:.2f}, oz={self.oz:.2f}")
             return (self.tilt_x_deg, self.tilt_z_deg)
-        
+
         # ---- Rimuovi offset ----
         ax = x - self.ox
         ay = y - self.oy
@@ -104,24 +124,18 @@ class AccelController:
         roll_deg  = math.degrees(math.atan2(ax, math.sqrt(ay*ay + az*az)))
         pitch_deg = math.degrees(math.atan2(ay, math.sqrt(ax*ax + az*az)))
 
-        # print(f"Raw XYZ: ({x}, {y}, {z}) -> Roll_deg: {roll_deg:.2f}, Pitch_deg: {pitch_deg:.2f}")
-
-        # Target tilt
         target_tilt_x = -pitch_deg
         target_tilt_z = roll_deg
 
-        # Deadzone per non tremare quando "quasi fermo"
+        # Deadzone
         if abs(target_tilt_x) < self.deadzone_deg:
             target_tilt_x = 0.0
         if abs(target_tilt_z) < self.deadzone_deg:
             target_tilt_z = 0.0
 
-        # Smoothing (low-pass)
+        # Smoothing
         a = self.smooth
         self.tilt_x_deg = (1 - a) * self.tilt_x_deg + a * target_tilt_x
         self.tilt_z_deg = (1 - a) * self.tilt_z_deg + a * target_tilt_z
 
         return (self.tilt_x_deg, self.tilt_z_deg)
-    
-    def vibra(self):
-        self.ser.write(b'V\n') # comando vibrazione mandato al teensy
