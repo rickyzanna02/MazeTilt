@@ -2,7 +2,6 @@ import math
 import pygame
 from pygame.locals import *
 from OpenGL.GL import *
-from OpenGL.GLU import *
 from pythonosc.udp_client import SimpleUDPClient
 import argparse
 import csv
@@ -102,30 +101,68 @@ def point_in_rect(px, pz, rect):
     x, z, w, d = rect
     return (x <= px <= x + w) and (z <= pz <= z + d)
 
-def draw_sphere(radius, slices=18, stacks=18):
-    quad = gluNewQuadric()
-    gluSphere(quad, radius, slices, stacks)
-    gluDeleteQuadric(quad)
+def draw_sphere(radius, slices=16, stacks=16):
+    for i in range(stacks):
+        lat0 = math.pi * (-0.5 + float(i) / stacks)
+        z0  = math.sin(lat0)
+        zr0 = math.cos(lat0)
+
+        lat1 = math.pi * (-0.5 + float(i + 1) / stacks)
+        z1  = math.sin(lat1)
+        zr1 = math.cos(lat1)
+
+        glBegin(GL_TRIANGLE_STRIP)
+        for j in range(slices + 1):
+            lng = 2 * math.pi * float(j) / slices
+            x = math.cos(lng)
+            y = math.sin(lng)
+
+            glVertex3f(radius * x * zr0,
+                       radius * z0,
+                       radius * y * zr0)
+
+            glVertex3f(radius * x * zr1,
+                       radius * z1,
+                       radius * y * zr1)
+        glEnd()
+
+
+
+def perspective(fovy, aspect, znear, zfar):
+    f = 1.0 / math.tan(math.radians(fovy) / 2.0)
+
+    m = [
+        f / aspect, 0.0, 0.0,  0.0,
+        0.0, f,       0.0,  0.0,
+        0.0, 0.0, (zfar + znear) / (znear - zfar), -1.0,
+        0.0, 0.0, (2.0 * zfar * znear) / (znear - zfar), 0.0
+    ]
+
+    glMultMatrixf(m)
+
 
 def init_opengl():
     glEnable(GL_DEPTH_TEST)
-    glDisable(GL_LIGHTING) #  No lighting: constant colors, no change with inclination
-    glDisable(GL_LIGHT0)
-    glClearColor(0.85, 0.90, 0.98, 1.0) # lighter background
+    glDisable(GL_LIGHTING)
+    glClearColor(0.85, 0.90, 0.98, 1.0)
+
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
-    gluPerspective(50.0, WIN_WIDTH / WIN_HEIGHT, 0.1, 200.0)
+    perspective(50.0, WIN_WIDTH / WIN_HEIGHT, 0.1, 200.0)
+
     glMatrixMode(GL_MODELVIEW)
+    glLoadIdentity()
+
 
 def setup_fixed_camera_handheld():
-    # un po' più alta (così con tilt su non perdi il labirinto)
-    eye_x, eye_y, eye_z = (0.0, 28.0, 25)
-    center_x, center_y, center_z = (0.0, 0.0, 0.0)
-    up_x, up_y, up_z = (0.0, 1.0, 0.0)
+    glLoadIdentity()
 
-    gluLookAt(eye_x, eye_y, eye_z,
-              center_x, center_y, center_z,
-              up_x, up_y, up_z)
+    # arretra la camera
+    glTranslatef(0.0, -1.0, -38.0)
+
+    # inclina verso il basso
+    glRotatef(42.0, 1.0, 0.0, 0.0)
+
 
 
 def draw_text_gl(x, y, text, font, color=(10, 10, 10)):
@@ -250,6 +287,11 @@ def main():
 
     while running:
         dt = clock.tick(FPS) / 1000.0
+     
+            
+            
+
+
 
         for event in pygame.event.get():
             if event.type == QUIT:
@@ -453,7 +495,7 @@ def main():
                     state = "PLAY"
                 else:
                     state = "WIN"
-                    save_results(player_name, attempt_number, "WIN", total_time, wall_collisions, lives) 
+                    save_results(player_name, modalita, attempt_number, "WIN", total_time, wall_collisions, lives) 
 
         # -------- RENDER 3D --------
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -461,8 +503,11 @@ def main():
         setup_fixed_camera_handheld()
 
         glPushMatrix()
+
         glRotatef(tilt_x_deg, 1, 0, 0)
         glRotatef(-tilt_z_deg, 0, 0, 1)
+
+        glTranslatef(0.0, 3.0, 0.0)
 
         maze.draw()
 
@@ -473,6 +518,7 @@ def main():
         glPopMatrix()
 
         glPopMatrix()
+
 
         # ---------- HUD OPENGL ----------
         glDisable(GL_DEPTH_TEST)
