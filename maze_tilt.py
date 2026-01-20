@@ -490,6 +490,8 @@ def main():
                 if ENABLE_AUDIO:
                     win.send_message("/win", 1)
                     rolling.send_message("/rolling/on", 0)
+                if ENABLE_VIBRATION:
+                    vibration.send_message("/H", 0)
                 rolling_on = False
 
                 if current_level < max_level:
