@@ -14,7 +14,7 @@ const int motorPin1 = A8;
 const int motorPin2 = A9;
 
 // Vibrazione impulso
-int impulsePower = 200;
+int impulsePower = 180;
 unsigned long impulseTime = 120;
 bool impulseActive = false;
 unsigned long impulseStart = 0;

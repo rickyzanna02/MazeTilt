@@ -25,7 +25,7 @@ FRICTION = 0.99
 MAX_TILT_DEG = 18
 START_POS = (0.0, -(MAZE_DEPTH / 2.0) + 3.0)  # (x, z)
 START_LIVES = 3
-HOLE_VIBRATION_MAX = 220   # PWM max
+HOLE_VIBRATION_MAX = 180   # PWM max
 HOLE_VIBRATION_MIN = 40    # min vibration
 GOAL_RECT = (MAZE_WIDTH / 2.0 - 3.0, MAZE_DEPTH / 2.0 - 3.5, 2.2, 2.2)# Goal: rect in XZ plane (x, z, w, d)
 
