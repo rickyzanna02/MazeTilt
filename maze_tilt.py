@@ -11,6 +11,11 @@ from ball import Ball
 from maze import Maze
 from accelerometer import AccelController
 
+MODALITA_MAP = {
+    0: "Solo video",
+    1: "Video + Audio",
+    2: "Video + Audio + Vibrazione"
+}
 
 MAX_ROLL_SPEED = 16.0 
 ROLL_ON_THRESHOLD = 0.05
@@ -195,7 +200,7 @@ def draw_hud_gl(font, level, max_level, lives, state, time_sec, wall_hits):
         draw_text_gl(20, y, "YOU WIN! (R to restart)", font, (0, 120, 0))
 
 
-def save_results(name, modalita, attempt, result, time_sec, wall_hits, lives):
+def save_results(name, attempt, modalita, livello, result, time_sec, wall_hits, lives):
     os.makedirs("results", exist_ok=True)
     filename = os.path.join("results", "results.csv")
     file_exists = os.path.isfile(filename)
@@ -206,8 +211,10 @@ def save_results(name, modalita, attempt, result, time_sec, wall_hits, lives):
         if not file_exists:
             writer.writerow([
                 "Nome",
-                "Modalità",
                 "Tentativo",
+                "Modalità_ID",
+                "Modalità",
+                "Livello_raggiunto",
                 "Esito",
                 "Tempo_totale_sec",
                 "Collisioni_muri",
@@ -216,8 +223,10 @@ def save_results(name, modalita, attempt, result, time_sec, wall_hits, lives):
 
         writer.writerow([
             name,
-            modalita,
             attempt,
+            modalita,
+            MODALITA_MAP.get(modalita, "Sconosciuta"),
+            livello,
             result,
             f"{time_sec:.2f}",
             wall_hits,
@@ -475,7 +484,7 @@ def main():
                     boom.send_message("/boom", 1)
                 if lives <= 0:
                     state = "GAME_OVER" 
-                    save_results(player_name, modalita, attempt_number, "GAME_OVER", total_time, wall_collisions, lives)    
+                    save_results(player_name, attempt_number, modalita, current_level, "GAME_OVER", total_time, wall_collisions, lives)    
                     if ENABLE_VIBRATION:
                         vibration.send_message("/H", 0)
                     if ENABLE_AUDIO:
@@ -502,7 +511,7 @@ def main():
                     state = "PLAY"
                 else:
                     state = "WIN"
-                    save_results(player_name, modalita, attempt_number, "WIN", total_time, wall_collisions, lives) 
+                    save_results(player_name, attempt_number, modalita, current_level, "WIN", total_time, wall_collisions, lives) 
 
         # -------- RENDER 3D --------
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
