@@ -12,10 +12,7 @@ def start_pd():
         {
             "dir": "PureDataAudio",
             "patches": [
-                "rolling.pd",
-                "bouncing.pd",
-                "boom.pd",
-                "win.pd",
+                "audioPatch.pd",
             ]
         },
         {
@@ -51,9 +48,6 @@ def start_pd():
             if not os.path.isfile(patch_path):
                 raise FileNotFoundError(f"Patch non trovata: {patch_path}")
             cmd.extend(["-open", patch_path])
-
-    # DSP ON
-    cmd.extend(["-send", "pd dsp 1"])
 
     # ======================
     # AVVIO IN BACKGROUND
