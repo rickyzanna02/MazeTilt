@@ -44,7 +44,7 @@ BUTTON_W, BUTTON_H = 140, 36
 BUTTON_X = PANEL_X + (PANEL_W - BUTTON_W) // 2
 BUTTON_Y = PANEL_Y + 260
 LABEL_TO_INPUT_GAP = 30
-FIELD_GAP = 80   # distanza tra Nome e Tentativo (label → label)
+FIELD_GAP = 80   # distanza tra Nome e Tentativo (label -> label)
 
 NAME_LABEL_Y = PANEL_Y + 60
 NAME_INPUT_Y = NAME_LABEL_Y + LABEL_TO_INPUT_GAP
@@ -312,11 +312,11 @@ def main():
                 # ---------- ENTER ----------
                 elif event.key == K_RETURN:
                     if input_field == "name":
-                        # ENTER su nome → vai a tentativo
+                        # ENTER su nome -> vai a tentativo
                         input_field = "attempt"
 
                     elif input_field == "attempt":
-                        # ENTER su tentativo → prova a partire
+                        # ENTER su tentativo -> prova a partire
                         if player_name.strip() != "" and attempt_number != "":
                             state = "PLAY"
                             start_time = pygame.time.get_ticks()
@@ -428,7 +428,7 @@ def main():
                 vibration.send_message("/V", 1)
 
             # ---------------------------------------------------
-            # HOLE AREA → VIBRAZIONE CONTINUA PROPORZIONALE
+            # HOLE AREA -> VIBRAZIONE CONTINUA PROPORZIONALE
             # ---------------------------------------------------
 
             hole_vibration = 0
@@ -446,7 +446,7 @@ def main():
                     # normalizza distanza (0 = centro buco, 1 = bordo area)
                     t = clamp((dist - hole_r) / (area_r - hole_r), 0.0, 1.0)
 
-                    # inverti: più vicino → più vibrazione
+                    # inverti: più vicino -> più vibrazione
                     intensity = HOLE_VIBRATION_MIN + (1.0 - t) * (HOLE_VIBRATION_MAX - HOLE_VIBRATION_MIN)
 
                     hole_vibration = int(intensity)
