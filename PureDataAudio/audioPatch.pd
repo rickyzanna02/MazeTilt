@@ -111,10 +111,10 @@
 #X obj 1117 13 netreceive -u -b 9001;
 #X obj 11 550 netreceive -u -b 9003;
 #X obj 559 512 cnv 16 900 650 empty empty empty 20 12 0 10 #feffc6 #404040 0;
-#X obj 872 1076 dac~;
+#X obj 893 1071 dac~;
 #X text 736 1129 Args: object ID;
 #X text 1029 1128 Args: object ID \, n. of modes \, n. of pickups;
-#X text 891 939 Args: 1st obj ID \, 2nd obj ID \, n. of outlets;
+#X text 986 969 Args: 1st obj ID \, 2nd obj ID \, n. of outlets;
 #X msg 1089 519 Sound Design Toolkit \; (C) 2001 - 2024 \; \; Project SOb - soundobject.org \; Project CLOSED - closed.ircam.fr \; Project NIW - soundobject.org/niw \; Project SkAT-VG - skatvg.eu;
 #X obj 818 607 vsl 15 128 1e-05 1 1 0 empty grain empty 0 -9 0 10 #fcfcfc #000000 #000000 0 1;
 #X obj 930 607 vsl 15 128 0 200 0 0 empty depth empty 0 -9 0 10 #fcfcfc #000000 #000000 0 1;
@@ -123,7 +123,7 @@
 #X floatatom 818 743 6 0 0 0 - - - 0;
 #X floatatom 689 743 5 0 0 0 - - - 0;
 #X obj 1168 683 loadbang;
-#X obj 917 968 vsl 30 64 1000 100000 0 0 empty gain empty 0 -9 0 10 #fcfcfc #000000 #000000 0 1;
+#X obj 946 928 vsl 30 64 1000 100000 0 0 empty gain empty 0 -9 0 10 #fcfcfc #000000 #000000 0 1;
 #X obj 689 884 rolling~;
 #X obj 730 911 r ro;
 #X msg 601 763 mass \$1;
@@ -141,7 +141,7 @@
 #X obj 628 823 lop~ 20;
 #X obj 628 851 *~ 10;
 #X msg 623 1061 strike 0 0;
-#X obj 872 1043 *~ 50000;
+#X obj 871 995 *~ 50000;
 #X obj 689 939 impact~ hammerro objectro 2;
 #X obj 601 1128 inertial hammerro;
 #X obj 889 1128 modal objectro 3 1;
@@ -158,6 +158,8 @@
 #X text 1477 518 Auto enable DSP;
 #X msg 1485 624 \; pd dsp 1;
 #X obj 1485 586 delay 100;
+#X obj 878 927 line~;
+#X obj 893 1033 *~;
 #X connect 3 0 33 0;
 #X connect 4 0 15 0;
 #X connect 5 0 15 0;
@@ -251,13 +253,16 @@
 #X connect 135 0 136 0;
 #X connect 136 0 121 0;
 #X connect 137 0 140 0;
-#X connect 138 0 108 0;
-#X connect 138 0 108 1;
+#X connect 138 0 156 0;
 #X connect 139 1 138 0;
 #X connect 144 0 145 0;
 #X connect 146 0 148 0;
 #X connect 147 0 146 0;
+#X connect 148 0 155 0;
 #X connect 148 1 149 0;
 #X connect 149 0 121 0;
 #X connect 151 0 154 0;
 #X connect 154 0 153 0;
+#X connect 155 0 156 1;
+#X connect 156 0 108 0;
+#X connect 156 0 108 1;
