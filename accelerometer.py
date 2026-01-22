@@ -11,7 +11,7 @@ class AccelController:
     Mantiene invariata la logica di calibrazione e update().
     """
     def __init__(self,
-                 osc_ip="127.0.0.1",
+                 osc_ip="0.0.0.0",
                  osc_port=4444,
                  calib_samples=60,
                  smooth=0.20,
@@ -61,17 +61,24 @@ class AccelController:
     # =========================================================
     # OSC callbacks
     # =========================================================
-    def _on_x(self, addr, value):
-        self._osc_x = float(value)
+    def _on_x(self, addr, *args):
+        if not args:
+            return
+        self._osc_x = float(args[0])
         self._update_last_xyz()
 
-    def _on_y(self, addr, value):
-        self._osc_y = float(value)
+    def _on_y(self, addr, *args):
+        if not args:
+            return
+        self._osc_y = float(args[0])
         self._update_last_xyz()
 
-    def _on_z(self, addr, value):
-        self._osc_z = float(value)
+    def _on_z(self, addr, *args):
+        if not args:
+            return
+        self._osc_z = float(args[0])
         self._update_last_xyz()
+
 
     def _update_last_xyz(self):
         if self._osc_x is None or self._osc_y is None or self._osc_z is None:

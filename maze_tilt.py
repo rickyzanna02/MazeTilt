@@ -11,6 +11,8 @@ from ball import Ball
 from maze import Maze
 from accelerometer import AccelController
 
+IP_ADDRESS = "192.168.1.137"  # Indirizzo IP del dispositivo OSC (Teensy)
+
 MODALITA_MAP = {
     0: "Solo video",
     1: "Video + Audio",
@@ -253,18 +255,21 @@ def main():
 
     ENABLE_AUDIO = args.audio
     ENABLE_VIBRATION = args.vibration
+    
+
+    
 
     if ENABLE_VIBRATION:
-        vibration = SimpleUDPClient("127.0.0.1", 2222)
+        vibration = SimpleUDPClient(IP_ADDRESS, 2222)
     else:
         vibration = None
     
 
     if ENABLE_AUDIO:
-        bouncing = SimpleUDPClient("127.0.0.1", 9000)
-        boom = SimpleUDPClient("127.0.0.1", 9001)
-        rolling = SimpleUDPClient("127.0.0.1", 9002)
-        win=SimpleUDPClient("127.0.0.1",9003)
+        bouncing = SimpleUDPClient(IP_ADDRESS, 9000)
+        boom = SimpleUDPClient(IP_ADDRESS, 9001)
+        rolling = SimpleUDPClient(IP_ADDRESS, 9002)
+        win=SimpleUDPClient(IP_ADDRESS,9003)
     else:
         bouncing = boom = rolling = win = None
 
