@@ -99,18 +99,15 @@ class AccelController:
         Non blocca: ritorna l'ultimo valore OSC ricevuto.
         """
         return self._last_xyz
-
+    
     def update(self):
-        """
-        IDENTICO al tuo codice originale.
-        """
         xyz = self.read_latest_xyz()
         if xyz is None:
             return (self.tilt_x_deg, self.tilt_z_deg)
 
         x, y, z = xyz
 
-        # ---- Calibrazione offset iniziale ----
+        # Initial offset calibration
         if not self.calibrated:
             self._sumx += x
             self._sumy += y
@@ -123,7 +120,7 @@ class AccelController:
                 self.calibrated = True
             return (self.tilt_x_deg, self.tilt_z_deg)
 
-        # ---- Rimuovi offset ----
+        # Remove offset
         ax = x - self.ox
         ay = y - self.oy
         az = z

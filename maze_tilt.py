@@ -11,7 +11,7 @@ from ball import Ball
 from maze import Maze
 from accelerometer import AccelController
 
-IP_ADDRESS = "192.168.1.137"  # Indirizzo IP del dispositivo OSC (Teensy)
+IP_ADDRESS = "127.0.0.1"  # Indirizzo IP del dispositivo OSC (Teensy)
 
 MODALITA_MAP = {
     0: "Solo video",

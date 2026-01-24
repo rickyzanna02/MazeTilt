@@ -1,3 +1,16 @@
 Nome,Tentativo,Modalità_ID,Modalità,Livello_raggiunto,Esito,Tempo_totale_sec,Collisioni_muri,Vite_rimanenti
-nicola,1,2,Video + Audio + Vibrazione,2,GAME_OVER,28.89,9,0
-nicola,2,2,Video + Audio + Vibrazione,5,WIN,92.81,17,2
+sonia,1,0,Solo video,5,GAME_OVER,109.35,309,0
+sonia,1,1,Video + Audio,5,WIN,109.44,60,2
+sonia,1,2,Video + Audio + Vibrazione,5,WIN,113.20,89,1
+davide,1,0,Solo video,5,WIN,110.07,13,3
+davide,1,1,Video + Audio,5,WIN,87.98,3,3
+davide,1,2,Video + Audio + Vibrazione,5,WIN,77.71,20,3
+Massimo,1,1,Video + Audio,5,WIN,73.19,3,3
+Massimo,1,2,Video + Audio + Vibrazione,5,WIN,92.25,8,1
+Massimo,1,0,Solo video,5,WIN,67.85,11,3
+ric,1,2,Video + Audio + Vibrazione,5,WIN,52.06,13,3
+ric,2,2,Video + Audio + Vibrazione,5,WIN,51.65,24,3
+
+Mattia,1,0,Solo video,5,WIN,89.83,2,2
+Mattia,1,1,Video + Audio,5,WIN,73.26,4,3
+Mattia,1,2,Video + Audio + Vibrazione,5,WIN,69.07,3,3
