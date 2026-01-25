@@ -17,4 +17,57 @@ Giada,1,2,Video + Audio + Vibrazione,5,WIN,130.55,45,2
 alice,1,0,Solo video,5,WIN,149.32,2,3
 alice,1,1,Video + Audio,5,WIN,137.99,4,3
 alice,1,2,Video + Audio + Vibrazione,5,WIN,124.06,1,3
-
+Sabrina,1,1,Video + Audio,4,GAME_OVER,74.78,279,0
+Sabrina,2,0,Solo video,5,WIN,127.31,93,1
+Sabrina,3,2,Video + Audio + Vibrazione,5,WIN,97.77,61,3
+Elena,1,2,Video + Audio + Vibrazione,5,WIN,106.39,107,2
+Elena,2,1,Video + Audio,4,GAME_OVER,72.12,341,0
+Elena,3,0,Solo video,4,GAME_OVER,64.65,63,0
+Damiano,1,1,Video + Audio,5,WIN,148.01,3,3
+Damiano,2,0,Solo video,5,WIN,102.50,3,3
+Damiano,3,2,Video + Audio + Vibrazione,5,WIN,108.22,32,2
+Samuel,1,0,Solo video,4,GAME_OVER,60.46,43,0
+Samuel,2,1,Video + Audio,4,GAME_OVER,59.38,36,0
+Samuel,3,2,Video + Audio + Vibrazione,5,WIN,74.28,49,3
+Marco,1,2,Video + Audio + Vibrazione,5,WIN,147.73,226,1
+Marco,2,1,Video + Audio,5,WIN,110.13,55,3
+Marco,3,0,Solo video,5,WIN,115.11,330,2
+Mattia,1,0,Solo video,5,WIN,123.17,371,2
+Mattia,2,1,Video + Audio,5,WIN,90.75,39,3
+Mattia,3,2,Video + Audio + Vibrazione,5,WIN,97.32,40,1
+Ale,1,1,Video + Audio,3,GAME_OVER,42.49,19,0
+Ale,2,2,Video + Audio + Vibrazione,5,WIN,102.41,20,3
+Ale,3,0,Solo video,5,WIN,89.90,21,2
+Mattia,1,2,Video + Audio + Vibrazione,5,WIN,98.73,6,3
+Mattia,2,0,Solo video,5,WIN,93.85,1,3
+Mattia,3,1,Video + Audio,5,WIN,95.26,1,3
+Angela,1,0,Solo video,5,WIN,124.15,4,3
+Angela,2,1,Video + Audio,5,WIN,93.69,4,3
+Angela,3,2,Video + Audio + Vibrazione,5,WIN,96.54,11,3
+Filippo,1,2,Video + Audio + Vibrazione,5,WIN,100.63,34,3
+Filippo,2,1,Video + Audio,5,WIN,165.13,1,3
+Filippo,3,0,Solo video,5,WIN,120.12,1,3
+Amy,1,2,Video + Audio + Vibrazione,4,GAME_OVER,123.39,49,0
+Amy,2,1,Video + Audio,5,WIN,154.44,8,3
+Amy,3,0,Solo video,5,WIN,145.56,10,3
+Leo,1,2,Video + Audio + Vibrazione,5,WIN,106.93,30,1
+Leo,2,1,Video + Audio,5,WIN,95.75,20,3
+Leo,3,0,Solo Video,5,WIN,97.75,18,3
+Anna,1,1,Video + Audio,4,GAME_OVER,72.74,34,0
+Anna,2,2,Video + Audio + Vibrazione,5,WIN,142.37,46,1
+Anna,3,0,Solo video,5,WIN,151.10,52,1
+Noemi,1,2,Video + Audio + Vibrazione,3,GAME_OVER,108.03,100,0
+Noemi,2,1,Video + Audio,3,GAME_OVER,94.79,105,0
+Noemi,3,0,Solo video,3,GAME_OVER,93.21,112,0
+Diletta,1,1,Video + Audio,4,GAME_OVER,94.99,86,0
+Diletta,2,2,Video + Audio + Vibrazione,5,WIN,135.79,61,1
+Diletta,3,0,Solo video,5,WIN,140.79,58,1
+Nicole,1,2,Video + Audio + Vibrazione,4,GAME_OVER,148.32,68,0
+Nicole,2,1,Video + Audio,4,GAME_OVER,111.29,66,0
+Nicole,3,0,Solo video,4,GAME_OVER,123.44,70,0
+Simone,1,1,Video + Audio,5,WIN,103.91,4,3
+Simone,2,2,Video + Audio + Vibrazione,5,WIN,103.54,4,3
+Simone,3,0,Solo video,5,WIN,102.54,4,3
+Luca,1,2,Video + Audio + Vibrazione,3,GAME_OVER,58.98,8,0
+Luca,2,1,Video + Audio,4,GAME_OVER,68.49,20,0
+Luca,3,0,Solo video,4,GAME_OVER,65.23,17,0
