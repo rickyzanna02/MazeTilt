@@ -1,5 +1,7 @@
 # MazeTilt
-This project was developed as part of the Multisensory Interactive Systems course at the University of Trento.  
+<img src="images/mazeTilt.jpg" alt="Gamepad" width="70%" />
+
+This project was developed as part of the Multisensory Interactive Systems course at the University of Trento.
 
 ## Implementation overview
 The system implements a tilt-controlled 3D labyrinth game with visual, audio, and haptic feedback.
