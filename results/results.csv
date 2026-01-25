@@ -52,7 +52,7 @@ Amy,2,1,Video + Audio,5,WIN,154.44,8,3
 Amy,3,0,Solo video,5,WIN,145.56,10,3
 Leo,1,2,Video + Audio + Vibrazione,5,WIN,106.93,30,1
 Leo,2,1,Video + Audio,5,WIN,95.75,20,3
-Leo,3,0,Solo Video,5,WIN,97.75,18,3
+Leo,3,0,Solo video,5,WIN,97.75,18,3
 Anna,1,1,Video + Audio,4,GAME_OVER,72.74,34,0
 Anna,2,2,Video + Audio + Vibrazione,5,WIN,142.37,46,1
 Anna,3,0,Solo video,5,WIN,151.10,52,1
