@@ -20,50 +20,48 @@ The gamepad contains:
 - 2x ERM vibration motors providing vibrotactile feedback
 The accelerometer continuously measures the orientation of the gamepad. These values are sent to the PC via OSC communication with Pure Data patch, where they are mapped to the virtual inclination of the labyrinth. The ERM motors are directly controlled by the microcontroller based on commands received from the PC.
 <div align="center">
-    <img src="images/gamepad.jpg" alt="Network Schema" height="300">
-    <img src="images/pinout.jpg" alt="Network Schema" height="300">
-    <img src="images/teensy.png" alt="Network Schema" height="300">
+    <img src="images/gamepad.jpg" alt="Network Schema" height="280">
+    <img src="images/pinout.jpg" alt="Network Schema" height="280">
+    <img src="images/teensy.png" alt="Network Schema" height="280">
 </div>
 
 ## Software
 ```
-├── 📁 Pd_serial_communication_send_receive
-│   ├── 📄 Main_Pd_serial_communication_send_receive.pd
+├── 📁 Pd_serial_communication_send_receive                 # pd patched for accelerometer values
+│   ├── 📄 Main_Pd_serial_communication_send_receive.pd     
 │   ├── 📄 _format_serial_messages.pd
 │   ├── 📄 serial_print-help.pd
 │   └── 📄 serial_print.pd
-├── 📁 PureDataAudio
+├── 📁 PureDataAudio                                        # pd patch for audio synthesis
 │   └── 📄 audioPatch.pd
-├── 📁 SUS calculator
+├── 📁 SUS calculator                                       # sus computing
 │   ├── 📄 sus-input-data.csv
 │   ├── 📄 sus-results.csv
 │   ├── 🐍 sus.py
 │   └── 🖼️ sus_results_breakdown.png
-├── 📁 Teensy
-│   └── 📁 gamepad
-│       └── 📄 gamepad.ino
+├── 📁 Teensy                                               
+│   └── 📄 gamepad.ino                                      # code for the teensy
 ├── 📁 images
 │   ├── 🖼️ gamepad.jpg
 │   ├── 🖼️ net.jpg
 │   ├── 🖼️ pinout.jpg
 │   ├── 🖼️ res.png
 │   └── 🖼️ teensy.png
-├── 📁 results
-│   ├── 📁 plot
+├── 📁 results                                             # results folder
+│   ├── 📁 plot                                            # plots and data results
 │   │   ├── 🖼️ collisions.png
 │   │   ├── 🖼️ completion_time.png
 │   │   ├── 🖼️ composite_score.png
 │   │   └── 🖼️ remaining_lives.png
 │   ├── 🐍 analize_results.py
-│   └── 📄 results.csv
-├── ⚙️ .gitignore
+│   └── 📄 results.csv                                     # log of the partecipant tests
 ├── 📝 README.md
-├── 🐍 accelerometer.py
-├── 🐍 ball.py
-├── 🐍 levels.py
-├── 🐍 maze.py
-├── 🐍 maze_tilt.py
-└── 📄 requirements.txt
+├── 🐍 accelerometer.py                                    # python scripts
+├── 🐍 ball.py                                             
+├── 🐍 levels.py                                           
+├── 🐍 maze.py                                             
+├── 🐍 maze_tilt.py                                        # main file .py
+└── 📄 requirements.txt                                    # requirements to run the project
 ```
 
  
@@ -86,7 +84,7 @@ The system uses two communication channels:
 
 
 ## How to run
-- Assumptions: the gamepad is already assembled and fully functional (with the code of `Teensy/gamepad.ino`), and the current working directory is `MazeTilt`
+- Assumptions: the gamepad is already assembled and fully functional (with the code of `Teensy/gamepad.ino`), the current working directory is `MazeTilt` and all the requirements are installed (`pip install -r requirements.txt`)
 - Connect the Raspberry Pi to the router via Wi-Fi.
 - Connect the PC to the router via Wi-Fi.
 - On the Raspberry Pi, run the following Pure Data patches:
@@ -116,6 +114,15 @@ The results are well explained in the Report document, here we put for convinien
 
 **Bold** : best result  
 <u>Underlined</u> : second best result
+
+<div align="center">
+    <img src="results/plots/completion_time.png" alt="Completion_Time" width="45%">
+    <img src="results/plots/collisions.png" alt="Collisions" width="45%">
+</div>
+<div align="center">
+    <img src="results/plots/remaining_lives.png" alt="Rimaining_Lives" width="45%">
+    <img src="results/plots/composite_score.png" alt="Composite_Score" width="45%">
+</div>
 
 ## Authors:
 - Cappellaro Nicola
