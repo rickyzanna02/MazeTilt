@@ -8,9 +8,13 @@ davide,1,2,Video + Audio + Vibrazione,5,WIN,77.71,20,3
 Massimo,1,1,Video + Audio,5,WIN,73.19,3,3
 Massimo,1,2,Video + Audio + Vibrazione,5,WIN,92.25,8,1
 Massimo,1,0,Solo video,5,WIN,67.85,11,3
-ric,1,2,Video + Audio + Vibrazione,5,WIN,52.06,13,3
-ric,2,2,Video + Audio + Vibrazione,5,WIN,51.65,24,3
-
 Mattia,1,0,Solo video,5,WIN,89.83,2,2
 Mattia,1,1,Video + Audio,5,WIN,73.26,4,3
 Mattia,1,2,Video + Audio + Vibrazione,5,WIN,69.07,3,3
+Giada,1,0,Solo video,5,WIN,174.44,38,1
+Giada,1,1,Video + Audio,5,WIN,135.60,52,1
+Giada,1,2,Video + Audio + Vibrazione,5,WIN,130.55,45,2
+alice,1,0,Solo video,5,WIN,149.32,2,3
+alice,1,1,Video + Audio,5,WIN,137.99,4,3
+alice,1,2,Video + Audio + Vibrazione,5,WIN,124.06,1,3
+
