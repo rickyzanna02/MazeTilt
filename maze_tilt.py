@@ -11,7 +11,7 @@ from ball import Ball
 from maze import Maze
 from accelerometer import AccelController
 
-IP_ADDRESS = "127.0.0.1"  # Indirizzo IP del dispositivo OSC (Teensy)
+IP_ADDRESS = "127.0.0.1"  # IP address of the OSC device (Teensy in our case, but work also for Pure Data on the same PC)
 
 MODALITA_MAP = {
     0: "Solo video",
@@ -51,7 +51,7 @@ BUTTON_W, BUTTON_H = 140, 36
 BUTTON_X = PANEL_X + (PANEL_W - BUTTON_W) // 2
 BUTTON_Y = PANEL_Y + 260
 LABEL_TO_INPUT_GAP = 30
-FIELD_GAP = 80   # distanza tra Nome e Tentativo (label -> label)
+FIELD_GAP = 80   # distance between Name and Attempt (label -> label)
 
 NAME_LABEL_Y = PANEL_Y + 60
 NAME_INPUT_Y = NAME_LABEL_Y + LABEL_TO_INPUT_GAP
@@ -60,21 +60,21 @@ ATT_LABEL_Y = NAME_LABEL_Y + FIELD_GAP
 ATT_INPUT_Y = ATT_LABEL_Y + LABEL_TO_INPUT_GAP
 
 def draw_input_panel(font, player_name, attempt, active_field):
-    # sfondo scuro
+    # dark background
     overlay = pygame.Surface((WIN_WIDTH, WIN_HEIGHT), pygame.SRCALPHA)
     overlay.fill((0, 0, 0, UI_BG_ALPHA))
     data = pygame.image.tostring(overlay, "RGBA", True)
     glDrawPixels(WIN_WIDTH, WIN_HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, data)
 
-    # pannello centrale
+    # central panel
     panel = pygame.Surface((PANEL_W, PANEL_H))
     panel.fill((240, 240, 240))
     pygame.draw.rect(panel, (50, 50, 50), panel.get_rect(), 2)
 
-    # testi
-    panel.blit(font.render("Inserisci dati", True, (0, 0, 0)), (120, 20))
-    panel.blit(font.render("Nome:", True, (0, 0, 0)), (40, NAME_LABEL_Y - PANEL_Y))
-    panel.blit(font.render("Tentativo:", True, (0, 0, 0)), (40, ATT_LABEL_Y - PANEL_Y))
+    # texts
+    panel.blit(font.render("Enter data", True, (0, 0, 0)), (120, 20))
+    panel.blit(font.render("Name:", True, (0, 0, 0)), (40, NAME_LABEL_Y - PANEL_Y))
+    panel.blit(font.render("Attempt:", True, (0, 0, 0)), (40, ATT_LABEL_Y - PANEL_Y))
 
     # input box
     name_color = (0, 120, 255) if active_field == "name" else (0, 0, 0)
@@ -86,7 +86,7 @@ def draw_input_panel(font, player_name, attempt, active_field):
     panel.blit(font.render(player_name, True, (0, 0, 0)), (65, NAME_INPUT_Y - PANEL_Y + 5))
     panel.blit(font.render(attempt, True, (0, 0, 0)), (65, ATT_INPUT_Y - PANEL_Y + 5))
 
-    # bottone
+    # button
     pygame.draw.rect(panel, (0, 200, 0), (BUTTON_X - PANEL_X, BUTTON_Y - PANEL_Y, BUTTON_W, BUTTON_H))
     panel.blit(font.render("START", True, (255, 255, 255)),
                (BUTTON_X - PANEL_X + 35, BUTTON_Y - PANEL_Y + 7))
@@ -163,11 +163,9 @@ def init_opengl():
 
 def setup_fixed_camera_handheld():
     glLoadIdentity()
-
-    # arretra la camera
+    #  move the camera back
     glTranslatef(0.0, -1.0, -38.0)
-
-    # inclina verso il basso
+    # tilt downwards
     glRotatef(42.0, 1.0, 0.0, 0.0)
 
 
@@ -250,20 +248,15 @@ def main():
     if args.audio and args.vibration:
         modalita=2
     elif args.audio:
-        modalita=1
-    
+        modalita=1    
 
     ENABLE_AUDIO = args.audio
-    ENABLE_VIBRATION = args.vibration
-    
-
-    
+    ENABLE_VIBRATION = args.vibration    
 
     if ENABLE_VIBRATION:
         vibration = SimpleUDPClient(IP_ADDRESS, 2222)
     else:
-        vibration = None
-    
+        vibration = None    
 
     if ENABLE_AUDIO:
         bouncing = SimpleUDPClient(IP_ADDRESS, 9000)
@@ -306,31 +299,26 @@ def main():
 
     while running:
         dt = clock.tick(FPS) / 1000.0
-     
-            
-            
-
-
-
+        
         for event in pygame.event.get():
             if event.type == QUIT:
                 running = False
 
-            # -------- INPUT TASTIERA --------
+            # -------- INPUT KEYBOARD --------
             if state == "INPUT" and event.type == KEYDOWN:
 
-                # ---------- TAB: cambia focus SEMPRE ----------
+                # ---------- TAB: always change focus ----------
                 if event.key == K_TAB:
                     input_field = "attempt" if input_field == "name" else "name"
 
                 # ---------- ENTER ----------
                 elif event.key == K_RETURN:
                     if input_field == "name":
-                        # ENTER su nome -> vai a tentativo
+                        # ENTER on name -> go to attempt
                         input_field = "attempt"
 
                     elif input_field == "attempt":
-                        # ENTER su tentativo -> prova a partire
+                        # ENTER on attempt -> try to start
                         if player_name.strip() != "" and attempt_number != "":
                             state = "PLAY"
                             start_time = pygame.time.get_ticks()
@@ -342,7 +330,7 @@ def main():
                     else:
                         attempt_number = attempt_number[:-1]
 
-                # ---------- INPUT CARATTERI ----------
+                # ---------- INPUT CHARACTERS ----------
                 else:
                     if input_field == "name" and event.unicode.isprintable():
                         player_name += event.unicode
@@ -350,16 +338,15 @@ def main():
                     elif input_field == "attempt" and event.unicode.isdigit():
                         attempt_number += event.unicode
 
-
             # -------- INPUT MOUSE --------
             if state == "INPUT" and event.type == MOUSEBUTTONDOWN:
                 mx, my = event.pos
 
-                # click su campo nome
+                # click on name field
                 if INPUT_X <= mx <= INPUT_X + INPUT_W and NAME_INPUT_Y <= my <= NAME_INPUT_Y + INPUT_H:
                     input_field = "name"
 
-                # click su campo tentativo
+                # click on attempt field
                 elif INPUT_X <= mx <= INPUT_X + INPUT_W and ATT_INPUT_Y <= my <= ATT_INPUT_Y + INPUT_H:
                     input_field = "attempt"
 
@@ -370,10 +357,9 @@ def main():
                         state = "PLAY"
                         start_time = pygame.time.get_ticks()
 
-
         keys = pygame.key.get_pressed()
 
-        # Restart dopo win/gameover con R
+        # Restart after win/gameover with R
         if keys[K_r] and state in ("WIN", "GAME_OVER"):
             lives = START_LIVES
             current_level = 1
@@ -396,13 +382,13 @@ def main():
 
         if state == "PLAY" and start_time is not None:
             total_time = (pygame.time.get_ticks() - start_time) / 1000.0
-            # --- INPUT DA ACCELEROMETRO ---
+            # --- INPUT FROM ACCELEROMETER ---
             tilt_x_deg, tilt_z_deg = accel.update()
 
             tilt_x_deg = clamp(tilt_x_deg, -MAX_TILT_DEG, MAX_TILT_DEG)
             tilt_z_deg = clamp(tilt_z_deg, -MAX_TILT_DEG, MAX_TILT_DEG)
 
-            # fisica + collisioni
+            # physics + collisions
             ball.update(dt, tilt_x_deg, tilt_z_deg)
             speed = math.hypot(ball.vx, ball.vz)
             hit_wall = maze.handle_collisions(ball)
@@ -413,24 +399,24 @@ def main():
             # ROLLING SOUND (ON/OFF + VELOCITY)
             # ---------------------------------------------------
 
-            # velocità reale della pallina
+            # real ball speed
             speed = math.sqrt(ball.vx * ball.vx + ball.vz * ball.vz)
 
             if speed > ROLL_ON_THRESHOLD:
-                # accendi rolling se era spento
+                # turn on rolling if it was off
                 if not rolling_on:
                     if ENABLE_AUDIO:
                         rolling.send_message("/rolling/on", 1)
                     rolling_on = True
 
-                # mappa velocità fisica -> velocity sonora
+                # map physical speed -> sound velocity
                 rolling_velocity = min((speed / MAX_ROLL_SPEED) * 5.0, 5.0)
 
                 if ENABLE_AUDIO:
                     rolling.send_message("/rolling/velocity", rolling_velocity)
 
             else:
-                # spegni rolling se la pallina è ferma
+                # turn off rolling if the ball is stopped
                 if rolling_on:
                     if ENABLE_AUDIO:                        
                         rolling.send_message("/rolling/on", 0)
@@ -442,7 +428,7 @@ def main():
                 vibration.send_message("/V", 1)
 
             # ---------------------------------------------------
-            # HOLE AREA -> VIBRAZIONE CONTINUA PROPORZIONALE
+            # HOLE AREA -> CONTINUOUS VIBRATION PROPORTIONAL
             # ---------------------------------------------------
 
             hole_vibration = 0
@@ -454,19 +440,19 @@ def main():
                 if dist < area_r:
                     inside_area = True
 
-                    # trova raggio del buco vero
+                    # find true hole radius
                     hole_r = next(r for (x, z, r) in maze.holes if x == hx and z == hz)
 
-                    # normalizza distanza (0 = centro buco, 1 = bordo area)
+                    # normalize distance (0 = hole center, 1 = area edge)
                     t = clamp((dist - hole_r) / (area_r - hole_r), 0.0, 1.0)
 
-                    # inverti: più vicino -> più vibrazione
+                    # invert: closer -> more vibration
                     intensity = HOLE_VIBRATION_MIN + (1.0 - t) * (HOLE_VIBRATION_MAX - HOLE_VIBRATION_MIN)
 
                     hole_vibration = int(intensity)
                     break
 
-            # invio comando al teensy
+            # send command to teensy
             if inside_area:
                 if ENABLE_VIBRATION:
                     vibration.send_message("/H", hole_vibration)
@@ -474,7 +460,7 @@ def main():
                 if ENABLE_VIBRATION:
                     vibration.send_message("/H", 0)
 
-            # caduta nei buchi
+            # falling into holes
             fell = False
             for (hx, hz, r) in maze.holes:
                 if math.hypot(ball.x - hx, ball.z - hz) < (r - BALL_RADIUS * 0.25):
@@ -499,7 +485,7 @@ def main():
                     ball.reset()                   
                     reset_tilt(accel)                    
 
-            # vittoria
+            # victory
             if point_in_rect(ball.x, ball.z, GOAL_RECT):
                 if ENABLE_AUDIO:
                     win.send_message("/win", 1)
@@ -539,7 +525,6 @@ def main():
         glPopMatrix()
 
         glPopMatrix()
-
 
         # ---------- HUD OPENGL ----------
         glDisable(GL_DEPTH_TEST)

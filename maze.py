@@ -69,7 +69,7 @@ class Maze:
         self.walls.append((-w / 2.0, -d / 2.0, t, d))             # left
         self.walls.append((w / 2.0 - t, -d / 2.0, t, d))          # right
 
-        # Area interna utile (per non sforare)
+        #   Useful internal area (to avoid going out of bounds)
         xmin = -w / 2.0 + t
         xmax =  w / 2.0 - t
         zmin = -d / 2.0 + t
@@ -77,22 +77,22 @@ class Maze:
 
         level_data = LEVELS.get(self.level, LEVELS[1])
 
-        # ---- muri ----
+        # ---- walls ----
         self.add_internal_walls(
             level_data["walls"],
             xmin, xmax, zmin, zmax, t
         )
 
-        # ---- buchi ----
+        # ---- holes ----
         self.holes = level_data["holes"]
 
-        # ---- hole areas (derivate automaticamente) ----
+        # ---- hole areas (automatically derived) ----
         self.holes_area = [
             (x, z, r * 3.0) for (x, z, r) in self.holes
         ]
 
     def draw(self):
-        # piano
+        # floor
         glColor3f(0.86, 0.86, 0.86)
         glBegin(GL_QUADS)
         glVertex3f(-MAZE_WIDTH / 2, 0, -MAZE_DEPTH / 2)
@@ -101,7 +101,7 @@ class Maze:
         glVertex3f(-MAZE_WIDTH / 2, 0, MAZE_DEPTH / 2)
         glEnd()
 
-        # traguardo (patch verde sul piano)
+        # goal (green patch on the floor)
         gx, gz, gw, gd = GOAL_RECT
         glColor3f(0.2, 0.8, 0.2)
         glBegin(GL_QUADS)
@@ -111,12 +111,12 @@ class Maze:
         glVertex3f(gx, 0.25, gz + gd)
         glEnd()
 
-        # buchi (dischi scuri)
+        # holes (dark disks)
         glColor3f(0.12, 0.12, 0.12)
         for (hx, hz, r) in self.holes:
             draw_disk(hx, 0.25, hz, r, segments=24)
 
-        # muri
+        # walls
         glColor3f(0.20, 0.20, 0.20)
         wall_height = 1
         for (x, z, w, d) in self.walls:
@@ -169,7 +169,7 @@ class Maze:
             dist2 = dx * dx + dz * dz
 
             if dist2 < BALL_RADIUS * BALL_RADIUS:
-                collided = True   # COLLISIONE
+                collided = True   # COLLISION
 
                 dist = math.sqrt(dist2) if dist2 != 0 else 1e-6
                 overlap = BALL_RADIUS - dist

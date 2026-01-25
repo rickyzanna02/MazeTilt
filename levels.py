@@ -4,14 +4,13 @@ MAZE_WIDTH = 20.0
 MAZE_DEPTH = 30.0
 
 # Walls (x_ref, z_ref, dx, dz, w, d)
-# x_ref, z_ref = "min" bordo minimo (sinistra o vicino) or "max" bordo massimo (destra o lontano)
-# dx, dz = coordinate offset del muro rispetto al riferimento
-# w, d = larghezza e profondità del muro; "T" indica che lo spessore thickness
+# x_ref, z_ref = "min" minimum edge (left or near) or "max" maximum edge (right or far)
+# dx, dz = coordinate offset of the wall relative to the reference
+# w, d = width and depth of the wall; "T" indicates that the thickness thickness
 
 # Holes (x, z, r)
-# x, z = coordinate del centro del buco
-# r = raggio del buco
-
+# x, z = coordinates of the center of the hole
+# r = radius of the hole
 LEVELS = {
     1: {
         "walls": [

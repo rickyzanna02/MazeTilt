@@ -6,9 +6,9 @@ from pythonosc.osc_server import ThreadingOSCUDPServer
 
 
 class AccelController:
-    """
-    Legge x,y,z via OSC (Pure Data) e li converte in tilt_x_deg / tilt_z_deg.
-    Mantiene invariata la logica di calibrazione e update().
+    """    
+    Reads x,y,z via OSC (Pure Data) and converts them to tilt_x_deg / tilt_z_deg.
+    Calibration and smoothing are performed.
     """
     def __init__(self,
                  osc_ip="0.0.0.0",
@@ -40,7 +40,7 @@ class AccelController:
         )
         self._osc_thread.start()
 
-        # ---- Calibrazione ----
+        # ---- Calibration ----
         self.calib_samples = calib_samples
         self._calib_count = 0
         self._sumx = 0.0
@@ -51,7 +51,7 @@ class AccelController:
         self.oz = 0.0
         self.calibrated = False
 
-        # ---- Filtro ----
+        # ---- Filtering ----
         self.smooth = smooth
         self.deadzone_deg = deadzone_deg
 
@@ -86,7 +86,7 @@ class AccelController:
         self._last_xyz = (self._osc_x, self._osc_y, self._osc_z)
 
     # =========================================================
-    # API identica alla versione seriale
+    # API identical to the serial version
     # =========================================================
     def close(self):
         try:
@@ -96,7 +96,7 @@ class AccelController:
 
     def read_latest_xyz(self):
         """
-        Non blocca: ritorna l'ultimo valore OSC ricevuto.
+        Non blocking: returns the last received OSC value.
         """
         return self._last_xyz
     
