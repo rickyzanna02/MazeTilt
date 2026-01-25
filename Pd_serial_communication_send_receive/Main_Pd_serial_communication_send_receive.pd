@@ -55,7 +55,7 @@
 #X msg 806 341 /a2 \$1;
 #X obj 706 411 packOSC;
 #X msg 757 496 connect 127.0.0.1 4444;
-#X obj 30 239 comport 4 115200;
+#X obj 30 239 comport 0 115200;
 #X connect 0 0 56 0;
 #X connect 1 0 56 0;
 #X connect 2 0 3 0;

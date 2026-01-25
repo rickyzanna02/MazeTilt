@@ -11,7 +11,7 @@ from ball import Ball
 from maze import Maze
 from accelerometer import AccelController
 
-IP_ADDRESS = "127.0.0.1"  # IP address of the OSC device (Teensy in our case, but work also for Pure Data on the same PC)
+IP_ADDRESS = "192.168.0.14"  # IP address of the OSC device (Teensy in our case, but work also for Pure Data on the same PC)
 
 MODALITA_MAP = {
     0: "Solo video",

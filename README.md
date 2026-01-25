@@ -13,7 +13,7 @@ Visual feedback is displayed on the PC, while audio and haptic feedback are deli
 A more detailed explanation of the system is provided in the report document, together with a demonstration video.
 
 ## How to run
-
+- Assumptions: the gamepad is already assembled and fully functional (with the code of `Teensy/gamepad.ino`), and the current working directory is `MazeTilt`
 - Connect the Raspberry Pi to the router via Wi-Fi.
 - Connect the PC to the same router via Wi-Fi.
 - On the Raspberry Pi, run the following Pure Data patches:
