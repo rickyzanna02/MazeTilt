@@ -20,9 +20,9 @@ The gamepad contains:
 - 2x ERM vibration motors providing vibrotactile feedback
 The accelerometer continuously measures the orientation of the gamepad. These values are sent to the PC via OSC communication with Pure Data patch, where they are mapped to the virtual inclination of the labyrinth. The ERM motors are directly controlled by the microcontroller based on commands received from the PC.
 <div align="center">
-    <img src="images/gamepad.jpg" alt="Network Schema" height="280">
-    <img src="images/pinout.jpg" alt="Network Schema" height="280">
-    <img src="images/teensy.png" alt="Network Schema" height="280">
+    <img src="images/gamepad.jpg" alt="Gamepad" height="250" />
+    <img src="images/pinout.jpg" alt="Pinout" height="250" />
+    <img src="images/teensy.png" alt="Teensy" height="250" />
 </div>
 
 ## Software
