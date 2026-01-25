@@ -1,27 +1,29 @@
-#N canvas 244 64 1920 966 10;
+#N canvas -587 73 1920 966 10;
 #X msg 41 67 close;
 #X msg 30 40 devices;
-#X floatatom 90 48 5 0 0 0 - - - 0;
+#X floatatom 90 48 5 0 0 0 - - -;
 #X msg 90 67 open \$1;
 #X obj 30 284 s;
 #X obj 30 262 serial_print any;
 #X msg 142 28 4;
-#X obj 410 4 cnv 15 750 300 empty empty empty 20 12 0 14 #fcfcc4 #404040 0;
+#X obj 410 4 cnv 15 750 300 empty empty empty 20 12 0 14 -262130 -66577
+0;
 #X obj 443 80 unpack s f;
-#X floatatom 500 143 8 0 0 0 - - - 0;
+#X floatatom 500 143 8 0 0 0 - - -;
 #X obj 722 80 unpack s f;
-#X floatatom 779 143 8 0 0 0 - - - 0;
+#X floatatom 779 143 8 0 0 0 - - -;
 #X obj 722 52 r a1;
 #X obj 820 174 s _a1;
 #X obj 979 78 unpack s f;
-#X floatatom 1036 141 8 0 0 0 - - - 0;
+#X floatatom 1036 141 8 0 0 0 - - -;
 #X obj 443 52 r a0;
 #X obj 541 174 s _a0;
 #X obj 979 50 r a2;
 #X obj 1077 172 s _a2;
 #X text 454 11 Data from analog sensors;
-#X obj 23 384 cnv 15 250 370 empty empty empty 20 12 0 14 #dcdcdc #404040 0;
-#X floatatom 40 534 5 0 0 0 - - - 0;
+#X obj 23 384 cnv 15 250 370 empty empty empty 20 12 0 14 -228856 -66577
+0;
+#X floatatom 40 534 5 0 0 0 - - -;
 #X obj 40 557 s resolution;
 #X msg 62 508 4095;
 #X msg 40 479 1023;
@@ -29,18 +31,22 @@
 #X text 101 477 10-bit Arduino resolution;
 #X text 101 507 12-bit Teensy resolution;
 #X text 39 406 Configuration;
-#X text 29 311 NOTE: You need to wait a bit for the IMU to be calibrated. Then the stream of sensor values arrives;
+#X text 29 311 NOTE: You need to wait a bit for the IMU to be calibrated.
+Then the stream of sensor values arrives;
 #X obj 128 191 r to_arduino;
 #X msg 178 27 0;
-#X obj 399 667 cnv 15 800 250 empty empty empty 20 12 0 14 #c4fcc4 #404040 0;
+#X obj 399 667 cnv 15 800 250 empty empty empty 20 12 0 14 -204786
+-66577 0;
 #X obj 424 861 _format_serial_messages;
 #X msg 628 707 0;
 #X msg 675 708 1;
 #X msg 629 784 0;
 #X obj 424 889 s to_arduino;
 #X msg 676 785 255;
-#X text 788 812 The Arduino sketch handles messages for the LED with numbers between 0 and 255: those correspond to the LED intensity;
-#X text 786 732 The Arduino sketch handles messages for the motors that are either 0 or 1: these correspond to the motor off and on;
+#X text 788 812 The Arduino sketch handles messages for the LED with
+numbers between 0 and 255: those correspond to the LED intensity;
+#X text 786 732 The Arduino sketch handles messages for the motors
+that are either 0 or 1: these correspond to the motor off and on;
 #X text 423 686 Send data to Arduino;
 #X msg 628 740 V \$1;
 #X msg 629 817 H \$1;
@@ -54,12 +60,12 @@
 #X msg 756 341 /a1 \$1;
 #X msg 806 341 /a2 \$1;
 #X obj 706 411 packOSC;
-#X msg 757 496 connect 127.0.0.1 4444;
 #X obj 30 239 comport 0 115200;
-#X connect 0 0 56 0;
-#X connect 1 0 56 0;
+#X msg 757 496 connect 192.168.0.10 4444;
+#X connect 0 0 55 0;
+#X connect 1 0 55 0;
 #X connect 2 0 3 0;
-#X connect 3 0 56 0;
+#X connect 3 0 55 0;
 #X connect 5 0 4 0;
 #X connect 5 1 4 1;
 #X connect 6 0 2 0;
@@ -79,8 +85,8 @@
 #X connect 24 0 22 0;
 #X connect 25 0 22 0;
 #X connect 26 0 25 0;
-#X connect 31 0 56 0;
-#X connect 32 0 56 0;
+#X connect 31 0 55 0;
+#X connect 32 0 55 0;
 #X connect 34 0 38 0;
 #X connect 35 0 43 0;
 #X connect 36 0 43 0;
@@ -92,11 +98,11 @@
 #X connect 46 0 47 0;
 #X connect 47 0 43 0;
 #X connect 47 1 44 0;
-#X connect 49 0 55 0;
+#X connect 49 0 56 0;
 #X connect 50 0 48 0;
 #X connect 51 0 54 0;
 #X connect 52 0 54 0;
 #X connect 53 0 54 0;
 #X connect 54 0 50 0;
-#X connect 55 0 48 0;
-#X connect 56 0 5 0;
+#X connect 55 0 5 0;
+#X connect 56 0 48 0;
